@@ -44,7 +44,7 @@ All third-party fonts, software libraries, and assets used in GlanceTrail are do
 - **Audio Feedback / Spatial Chimes:**
   - **Author:** Abhijeet Nardele
   - **License:** MIT License
-  - **Description:** Original harmonic chime frequencies (A4 440 Hz, C#5 554 Hz, E5 659 Hz) and procedural feedback logic. No copyrighted music or external stock audio files.
+  - **Description:** Original harmonic chime frequencies (A4 440 Hz, C#5 554.37 Hz, E5 659.25 Hz) and procedural feedback logic. No copyrighted music or external stock audio files.
 
 ---
 
@@ -52,4 +52,4 @@ All third-party fonts, software libraries, and assets used in GlanceTrail are do
 
 - **API Keys / Secrets Scan:** 0 keys, 0 private tokens, 0 cookies found.
 - **Personal Data:** Zero private personal photos, home addresses, or credentials committed.
-- **Git Tree:** Pristine and clean.
+- **Git Tree:** Verified clean and free of uncommitted debug clutter.

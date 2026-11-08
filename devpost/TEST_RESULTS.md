@@ -1,67 +1,87 @@
-# GlanceTrail — Automated LEAF Test Results
+# GlanceTrail — Controller Unit Test Results & LEAF Specification
 
 **Date of Execution:** November 8, 2026  
-**Test Framework:** LEAF (Lens Execution & Automation Framework)  
-**Target Environment:** Lens Studio Interactive Preview (SPECS Stereo Mode)  
-**Total Scenarios:** 6  
-**Passed:** 6  
-**Failed:** 0  
-**Overall Status:** **100% PASS**
+**Test Runner:** Node.js (`tests/controller-unit-tests.ts`)  
+**Scope:** Controller State Machine, Transition Guards, Yaw Normalization, Rescue Hint Timers, Reset Lifecycle  
+**Unit Test Results:** **6 / 6 PASS (100%)** (`UNIT_LOGIC_PROVEN`)  
+**LEAF Integration Suite:** Authored in `Assets/GlanceTrail/Tests/GlanceTrailLeafScenarios.ts` (`LEAF_UNEXECUTABLE_WITHOUT_LENS_STUDIO`)
 
 ---
 
-## Criterion-by-Criterion Results Matrix
+## 1. Controller Unit Test Results Matrix (`UNIT_LOGIC_PROVEN`)
 
-| # | Criterion | LEAF Scenario Name | Tested Assertion | Result | Evidence Type |
+| # | Criterion | Test Method | Tested Assertion | Result | Evidence Classification |
 |---|---|---|---|:---:|---|
-| **1** | Welcome starts guided rehearsal & activates Problem | `WelcomeStartsGuidedRehearsalScenario` | Pinching Begin rehearsal reveals 3 beacons; activates Problem (`beat 0`); hides Welcome card; displays cue ribbon | **PASS** | `LOGIC_PROVEN` & `PREVIEW_PROVEN` |
-| **2** | Active cue detail toggles without advancing | `DetailTogglesWithoutProgressScenario` | Pinching active beacon/ribbon toggles detail text expansion; maintains current beat and state without advancing | **PASS** | `LOGIC_PROVEN` & `PREVIEW_PROVEN` |
-| **3** | Continue advances exactly one beat with rapid-pinch guard | `ContinueAdvancesBeatGuardedScenario` | Pinching Continue advances Problem → Proof → Ask; rapid repeated pinches are dropped by transition lock | **PASS** | `LOGIC_PROVEN` & `PREVIEW_PROVEN` |
-| **4** | Connected trail draws & symbol mode hides text | `ConnectedTrailAndSymbolModeScenario` | Completing Ask connects luminous memory trail; Rehearse with symbols hides persistent text; shows symbols only | **PASS** | `LOGIC_PROVEN` & `PREVIEW_PROVEN` |
-| **5** | Rescue hint self-hides & directional arrow guides back | `RescueHintAndDirectionalGuidanceScenario` | Rescue hint reveals short cue for 2.0s then self-hides without advancing; out-of-view head rotation shows arrow & chime | **PASS** | `LOGIC_PROVEN` & `PREVIEW_PROVEN` |
-| **6** | Final completion displays & Start over cleans all state | `FinalCompleteAndResetCleansAllScenario` | Completing symbol run shows final message; Start over returns to pristine Welcome with zero stale objects | **PASS** | `LOGIC_PROVEN` & `PREVIEW_PROVEN` |
+| **1** | Welcome starts guided rehearsal & activates Problem | `Criterion 1` | Pinching Begin rehearsal reveals 3 beacons; activates Problem (`beat 0`); hides Welcome card; displays cue ribbon | **PASS** | `UNIT_LOGIC_PROVEN` |
+| **2** | Active cue detail toggles without advancing | `Criterion 2` | Pinching active beacon/ribbon toggles detail text expansion; maintains current beat and state without advancing | **PASS** | `UNIT_LOGIC_PROVEN` |
+| **3** | Continue advances exactly one beat with rapid-pinch guard | `Criterion 3` | Pinching Continue advances Problem → Proof → Ask; rapid repeated pinches are dropped by 250ms transition lock | **PASS** | `UNIT_LOGIC_PROVEN` |
+| **4** | Connected trail draws & symbol mode hides text | `Criterion 4` | Completing Ask connects luminous memory trail; Rehearse with symbols hides persistent text; shows symbols only | **PASS** | `UNIT_LOGIC_PROVEN` |
+| **5** | Rescue hint self-hides & directional arrow guides back | `Criterion 5` | Rescue hint reveals short cue for 2.0s then self-hides without advancing; out-of-view head rotation shows arrow & single chime | **PASS** | `UNIT_LOGIC_PROVEN` |
+| **6** | Final completion displays & Start over cleans all state | `Criterion 6` | Completing symbol run shows final message; Start over returns to pristine Welcome with zero stale objects | **PASS** | `UNIT_LOGIC_PROVEN` |
 
 ---
 
-## Execution Command & Reproduction
-
-To reproduce these test results locally:
-
-```bash
-cd glancetrail
-npm test
-```
-
-### Raw Test Output Log
+## 2. Raw Unit Test Output (`npm test`)
 
 ```text
-=================================================
-   GlanceTrail — LEAF Automated Scenario Suite   
-=================================================
-Executing 6 scenarios across all 6 done criteria...
+> glancetrail@1.0.0 test
+> node --experimental-strip-types tests/controller-unit-tests.ts
 
-1. [PASS [✓]] Criterion 1: Welcome starts guided rehearsal & activates Problem
-2. [PASS [✓]] Criterion 2: Active cue detail toggles without advancing progress
-3. [PASS [✓]] Criterion 3: Continue advances exactly one beat with rapid-pinch guard
-4. [PASS [✓]] Criterion 4: Connected trail draws and symbol-only mode hides detail text
-5. [PASS [✓]] Criterion 5: Rescue hint self-hides after ~2s & directional arrow guides back
-6. [PASS [✓]] Criterion 6: Final completion displays & Start over clears all stale state
+=================================================
+   GlanceTrail — Controller Unit Test Suite      
+   Classification: UNIT_LOGIC_PROVEN             
+=================================================
+Executing 6 unit tests across all 6 done criteria...
+
+[PASS [✓]] Criterion 1: Welcome starts guided rehearsal & activates only Problem (1 ms)
+[PASS [✓]] Criterion 2: Active cue detail toggles without advancing progress (301 ms)
+[PASS [✓]] Criterion 3: Continue advances exactly one beat with rapid-pinch guard (602 ms)
+[PASS [✓]] Criterion 4: Connected trail draws and symbol-only mode hides detail text (1202 ms)
+[PASS [✓]] Criterion 5: Rescue hint self-hides after ~2s & directional arrow guides back with single chime (3602 ms)
+[PASS [✓]] Criterion 6: Final completion displays & Start over clears all stale state (2407 ms)
 
 -------------------------------------------------
 Total: 6 | Passed: 6 | Failed: 0
-Execution Time: 8114 ms
+Execution Time: 8116 ms
 -------------------------------------------------
 ```
 
 ---
 
-## Manual Preview Checks & Hardware Limitations
+## 3. Genuine LEAF Integration Scenarios Specification
 
-| Check | Preview Observation | Status |
-|---|---|---|
-| **Additive Display Legibility** | Pure milk-glass luminous panels (`rgba(255, 247, 232, 0.07)`), porcelain text (`#FFF7E8`), champagne halos (`#FFD27A`). No reliance on black fills or dark glassmorphism. | `PREVIEW_PROVEN` |
-| **Field of View (26° Arc)** | At 1.1 m distance, all 3 beacons span ~50 cm, fitting comfortably inside the 32° horizontal FOV without head turning. | `PREVIEW_PROVEN` |
-| **Interaction Feedback** | Large targets (14×8 cm Continue button, 12 cm beacons, 8 cm hint circle) highlight on aim and show pressed feedback. | `PREVIEW_PROVEN` |
-| **Directional Excursion Chime** | Plays exactly once when active cue leaves view; soft arrow points back; hides immediately upon recovery. | `PREVIEW_PROVEN` |
-| **Physical Hand-Tracking Feel** | Real-world hand tracking noise, occlusion, and physical arm fatigue during extended standing sessions cannot be verified without physical SPECS hardware. | `FEEL_UNPROVEN` |
-| **Acoustic Environment** | Spatial sound clarity in noisy presentation rooms cannot be verified without physical SPECS speakers. | `FEEL_UNPROVEN` |
+The genuine LEAF scenarios are authored in [`Assets/GlanceTrail/Tests/GlanceTrailLeafScenarios.ts`](file:///c:/Users/Abhijeet%20Nardele/OneDrive/Desktop/devpost%20project/glancetrail/Assets/GlanceTrail/Tests/GlanceTrailLeafScenarios.ts) and registered in [`Assets/GlanceTrail/Tests/LeafIndex.ts`](file:///c:/Users/Abhijeet%20Nardele/OneDrive/Desktop/devpost%20project/glancetrail/Assets/GlanceTrail/Tests/LeafIndex.ts).
+
+These scenarios interact directly with rendered Lens Studio SceneObjects via `Leaf.lspkg`:
+
+1. `WelcomeStartsGuidedRehearsalScenario`:
+   - Interacts with: `BeginRehearsalButton` (pinch).
+   - Asserts: `WelcomeCard.enabled === false`, `Beacon_Problem.enabled === true`, `CueRibbon.enabled === true`.
+2. `DetailTogglesWithoutProgressScenario`:
+   - Interacts with: `CueRibbon` (pinch).
+   - Asserts: `DetailText.enabled === true`, `DetailText.text` matches content, rehearsal does not advance.
+3. `ContinueAdvancesBeatGuardedScenario`:
+   - Interacts with: `ContinueButton` (rapid double pinch).
+   - Asserts: `ShortCueText` matches Proof beat; rapid second pinch is guarded and does not skip to Ask.
+4. `ConnectedTrailAndSymbolModeScenario`:
+   - Interacts with: `ContinueButton` through Ask to `GUIDED_COMPLETE`, then pinches "Rehearse with symbols".
+   - Asserts: `MemoryTrailLine.enabled === true`, `ShortCueText.text === "[ ⌖ ]"`, persistent body text is empty.
+5. `RescueHintAndDirectionalGuidanceScenario`:
+   - Interacts with: `RescueHintButton` (pinch), then alters `SpectaclesCamera` world rotation by 30°.
+   - Asserts: `RescueHint` reveals text for 2.0s and self-hides; `DirectionalArrow.enabled === true` during excursion; single chime played; recovers cleanly when gaze recenters.
+6. `FinalCompleteAndResetCleansAllScenario`:
+   - Interacts with: `ContinueButton` through symbol rehearsal to `FINAL_COMPLETE`, then pinches `StartOverButton`.
+   - Asserts: `CompletionCard` visible; reset cleanly hides all beacons, trail, ribbon, and hints with zero lingering objects.
+
+### Honest LEAF Execution Blocker Notice
+- **Status:** `LEAF_UNEXECUTABLE_WITHOUT_LENS_STUDIO`
+- **Root Cause:** Snap Lens Studio 5.23+ is not installed on this local Windows machine (`reason: lens_studio_missing`).
+- **Prerequisite:** The user must open `glancetrail.esproj` in Lens Studio 5.23+ to execute these scenarios inside the Lens Studio Interactive Preview test harness.
+
+---
+
+## 4. Hardware Limitations (`FEEL_UNPROVEN`)
+
+- **Physical Comfort Over Time:** Head weight balance, heat dissipation, and neck fatigue during extended rehearsals cannot be verified in software.
+- **Real-World Hand Tracking:** Natural finger occlusion, wrist roll angles, and tracking dropout in harsh ambient sunlight require physical SPECS hardware.
+- **Acoustic Environment:** Spatial audio legibility in loud lecture rooms cannot be verified without physical speakers.

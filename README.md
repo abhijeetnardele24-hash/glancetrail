@@ -13,13 +13,13 @@ When preparing a pitch or presentation, traditional notes and teleprompters pres
 
 GlanceTrail replaces scrolling notes with three quiet, luminous beacons arranged across the room at eye level:
 1. **Problem** (front-left, soft coral)
-2. **Proof** (center, proof cyan)
-3. **Ask** (front-right, champagne light)
+2. **Proof** (center, warm champagne)
+3. **Ask** (front-right, cobalt light)
 
 ### The Signature Transformation
 
 - **First Run (Guided Rehearsal):** Each beacon opens into a concise cue ribbon with optional detail on demand. Advancing with a large pinch folds the idea into a warm beacon. Upon completing Ask, a luminous memory trail connects all three ideas in space.
-- **Second Run (Symbol-Only Rehearsal):** Persistent sentences vanish completely. Only spatial symbols remain on the beacons. If the speaker hesitates, a secondary **Rescue hint** target temporarily reveals the short cue for 2 seconds before self-hiding.
+- **Second Run (Symbol-Only Rehearsal):** Persistent sentences vanish completely. Only spatial symbols (`[ ⌖ ]`, `[ ✦ ─ ✦ ─ ✦ ]`, `[ ☼ ]`) remain on the beacons. If the speaker hesitates, a secondary **Rescue hint** target temporarily reveals the short cue for 2 seconds before self-hiding.
 - **Out-of-View Recovery:** If head movement drifts away from the active idea, a soft edge arrow and gentle spatial chime guide gaze back.
 
 The speaker learns the **path** of their argument rather than reciting a paragraph.
@@ -34,21 +34,6 @@ The speaker learns the **path** of their argument rather than reciting a paragra
 | **Gaze & Presence** | Fixated on flat scrolling text | Eyes up, connecting directly with the audience |
 | **Memory Mechanism** | Verbatim reading | Spatial memory anchored to stable room positions |
 | **Out-of-View Recovery** | None / lost place in text | Soft directional arrow and gentle chime guide gaze back |
-
----
-
-## Interactive Preview & Screenshots
-
-Captured directly from Lens Studio Interactive Preview (SPECS Stereo Mode, 1280×720):
-
-| State | Preview Screenshot | Description |
-|---|:---:|---|
-| **1. Welcome** | ![Welcome](devpost/screenshots/01_welcome.png) | Clean minimal start with "Begin rehearsal" pinch target. |
-| **2. Problem (Guided)** | ![Problem](devpost/screenshots/02_guided_problem.png) | Active Problem beacon glowing coral with 44×18 cm milk-glass cue ribbon. |
-| **3. Proof + Detail** | ![Proof Detail](devpost/screenshots/03_guided_proof_detail.png) | Proof beat with expanded detail text and centered cobalt Continue button. |
-| **4. Connected Trail** | ![Connected Trail](devpost/screenshots/04_connected_trail.png) | Luminous memory trail line connecting Problem, Proof, and Ask. |
-| **5. Symbol Mode + Hint** | ![Symbol Mode](devpost/screenshots/05_symbol_mode_hint.png) | Symbol-only mode with persistent text hidden, rescue hint halo, and edge arrow. |
-| **6. Final Completion** | ![Completion](devpost/screenshots/06_final_completion.png) | *"Path remembered. Now say it without reading it"* and Start over button. |
 
 ---
 
@@ -70,93 +55,86 @@ WELCOME
 ```
 
 ### Key Technical Safeguards:
-- **SIK Pinch Interactions:** Built using the Spectacles Interaction Kit and UI Kit. Large targets (14×8 cm Continue button, 12 cm beacons, 8 cm hint circle) highlight on aim and provide tactile pressed feedback.
+- **SIK Pinch Interactions:** Built for the Spectacles Interaction Kit and UI Kit. Large targets (14×8 cm Continue button, 12 cm beacons, 8 cm hint circle) highlight on aim and provide tactile pressed feedback.
 - **Guarded Input Idempotency:** Rapid repeated pinches during state transitions are dropped cleanly (`TRANSITION_LOCK_MS = 250`), preventing skipped beats or corrupted state.
-- **Additive Display Optics:** All visuals use translucent milk-glass shaders, porcelain text (`#FFF7E8`), and champagne halos (`#FFD27A`). Zero black fills that would render as transparent holes.
+- **Additive Display Optics:** All visuals use translucent milk-glass shaders, porcelain text (`#FFF7E8`), and champagne halos (`#FFD27A`). Zero black fills that would render as transparent holes on optical see-through displays.
+- **±180° Yaw Normalization:** Gaze angle calculations normalize across the wrap-around boundary, ensuring directional arrows trigger accurately.
 
 ---
 
-## Automated LEAF Test Suite (100% Pass)
+## Scene Hierarchy & Components
 
-GlanceTrail includes 6 automated LEAF integration test scenarios verifying every single done criterion:
+The Lens Studio scene graph is declaratively specified in [`Assets/GlanceTrail/GlanceTrailScene.json`](file:///c:/Users/Abhijeet%20Nardele/OneDrive/Desktop/devpost%20project/glancetrail/Assets/GlanceTrail/GlanceTrailScene.json):
+
+```text
+GlanceTrailScene
+├── SpectaclesCamera (World Tracking, 32° HFOV, 37° VFOV)
+├── InteractionManager (SIK System)
+└── GlanceTrailStage (Position: [0, -15, -110] cm)
+    ├── WelcomeCard (Canvas + MilkGlass RoundedQuad)
+    │   ├── TitleText ("GlanceTrail")
+    │   ├── TaglineText ("Rehearse with your eyes up.")
+    │   └── BeginRehearsalButton (Cobalt, SIK Interactable)
+    ├── BeaconGroup
+    │   ├── Beacon_Problem (x: -24.75 cm, Coral Glow, SIK Interactable)
+    │   ├── Beacon_Proof (x: 0.0 cm, Champagne Glow, SIK Interactable)
+    │   └── Beacon_Ask (x: +24.75 cm, Cobalt Glow, SIK Interactable)
+    ├── CueRibbon (44×18 cm MilkGlass, SIK Interactable)
+    │   ├── ShortCueText (Porcelain #FFF7E8, 16pt)
+    │   └── DetailText (Warm Beige #F5E6C8, Collapsible)
+    ├── ContinueButton (14×8 cm Cobalt, SIK Interactable)
+    ├── RescueHintButton (8 cm Circle, SIK Interactable)
+    ├── MemoryTrailLine (LineStrip connecting beacons, Mint #5CD68D)
+    ├── DirectionalArrow (Screen Edge billboard indicator)
+    ├── CompletionCard (Text3D + StartOverButton)
+    └── AudioSystem (AudioComponent with 7 procedural spatial cues)
+```
+
+---
+
+## Verification & Automated Testing
+
+### 1. Controller Unit Test Suite (`UNIT_LOGIC_PROVEN`)
+GlanceTrail includes 6 automated unit tests verifying every single done criterion:
 
 ```bash
-# Run the automated test suite locally
+cd glancetrail
 npm test
 ```
 
-### Test Verification Summary:
+Output:
 ```text
 =================================================
-   GlanceTrail — LEAF Automated Scenario Suite   
+   GlanceTrail — Controller Unit Test Suite      
+   Classification: UNIT_LOGIC_PROVEN             
 =================================================
-Executing 6 scenarios across all 6 done criteria...
+Executing 6 unit tests across all 6 done criteria...
 
-1. [PASS [✓]] Criterion 1: Welcome starts guided rehearsal & activates Problem
-2. [PASS [✓]] Criterion 2: Active cue detail toggles without advancing progress
-3. [PASS [✓]] Criterion 3: Continue advances exactly one beat with rapid-pinch guard
-4. [PASS [✓]] Criterion 4: Connected trail draws and symbol-only mode hides detail text
-5. [PASS [✓]] Criterion 5: Rescue hint self-hides after ~2s & directional arrow guides back
-6. [PASS [✓]] Criterion 6: Final completion displays & Start over clears all stale state
+[PASS [✓]] Criterion 1: Welcome starts guided rehearsal & activates only Problem (1 ms)
+[PASS [✓]] Criterion 2: Active cue detail toggles without advancing progress (301 ms)
+[PASS [✓]] Criterion 3: Continue advances exactly one beat with rapid-pinch guard (602 ms)
+[PASS [✓]] Criterion 4: Connected trail draws and symbol-only mode hides detail text (1202 ms)
+[PASS [✓]] Criterion 5: Rescue hint self-hides after ~2s & directional arrow guides back with single chime (3602 ms)
+[PASS [✓]] Criterion 6: Final completion displays & Start over clears all stale state (2407 ms)
 
 -------------------------------------------------
 Total: 6 | Passed: 6 | Failed: 0
-Execution Time: 8114 ms
+Execution Time: 8116 ms
 -------------------------------------------------
 ```
 
-Detailed test assertions and logs are recorded in [`devpost/TEST_RESULTS.md`](devpost/TEST_RESULTS.md).
+### 2. Genuine LEAF Integration Scenarios
+Authored in [`Assets/GlanceTrail/Tests/GlanceTrailLeafScenarios.ts`](file:///c:/Users/Abhijeet%20Nardele/OneDrive/Desktop/devpost%20project/glancetrail/Assets/GlanceTrail/Tests/GlanceTrailLeafScenarios.ts) and registered in [`Assets/GlanceTrail/Tests/LeafIndex.ts`](file:///c:/Users/Abhijeet%20Nardele/OneDrive/Desktop/devpost%20project/glancetrail/Assets/GlanceTrail/Tests/LeafIndex.ts). These scenarios use `Leaf.lspkg` contracts to interact directly with rendered Lens Studio SceneObjects.
+
+### 3. Non-Submission Prototype Reference
+The early 2D web prototype is preserved under [`prototype/browser-mock/`](file:///c:/Users/Abhijeet%20Nardele/OneDrive/Desktop/devpost%20project/glancetrail/prototype/browser-mock/). It is strictly reference material and not a substitute for Lens Studio Interactive Preview.
 
 ---
 
-## File Structure
+## Lens Studio Prerequisite
 
-```text
-glancetrail/
-├── glancetrail.esproj                 # Lens Studio project configuration
-├── .mcp.json                         # Lens Studio MCP definition
-├── package.json                      # Automated test suite scripts
-├── README.md                         # Project documentation and judge tour
-├── LICENSE                           # MIT License
-├── .gitignore                        # Clean repository filters
-├── devpost/
-│   ├── design-brief.md               # Approved official design brief
-│   ├── JUDGE_TOUR.md                 # 30-second judge tour
-│   ├── BUILD_EVIDENCE.md             # Build log, tooling versions & verification matrix
-│   ├── TEST_RESULTS.md               # LEAF integration test results
-│   ├── DEVPOST_SUBMISSION.md         # Full copy for the Devpost entry
-│   ├── DEMO_SCRIPT.md                # Video walkthrough script and shot list
-│   ├── ASSET_LICENSES.md             # Third-party font, audio & library licenses
-│   └── screenshots/                  # High-res preview screenshots
-│       ├── 01_welcome.png
-│       ├── 02_guided_problem.png
-│       ├── 03_guided_proof_detail.png
-│       ├── 04_connected_trail.png
-│       ├── 05_symbol_mode_hint.png
-│       └── 06_final_completion.png
-├── Assets/
-│   └── GlanceTrail/
-│       ├── Content/                  # Pitch data models and color palettes
-│       ├── Scripts/                  # State controller and spatial UI components
-│       ├── Audio/                    # Procedural spatial chime managers
-│       └── Tests/                    # LEAF scenario suites and LeafIndex
-├── preview/
-│   ├── index.html                    # Interactive Preview simulation
-│   └── bundle.js                     # Pre-bundled runtime for browser preview
-├── scripts/
-│   ├── capture-screenshots.js        # Automated Playwright capture script
-│   └── build-demo-video.js           # FFmpeg demo video rendering script
-└── submission-assets/
-    ├── thumbnail.png                 # 1280x720 video and Devpost thumbnail
-    ├── demo-master.mp4               # Verified demo video master (2:39 duration)
-    ├── captions.vtt                  # WebVTT accessibility captions
-    └── narration.md                  # Voiceover script
-```
-
----
-
-## Truthful Limitations & Hardware Disclosures
-
-- **Tested in Preview:** GlanceTrail was built and tested in Lens Studio Interactive Preview in SPECS stereo mode.
-- **Feel Unproven (`FEEL_UNPROVEN`):** Physical comfort over long standing sessions, real-world hand tracking noise under harsh outdoor sunlight, and spatial audio resonance in crowded auditoriums remain unmeasured without physical SPECS glasses.
-- **No Unmeasured Claims:** GlanceTrail makes zero claims of measured memory improvement scores; it is designed strictly as an ergonomic, spatial rehearsal coach.
+To open the project and run Interactive Preview:
+1. Install **Snap Lens Studio 5.23+** on your machine.
+2. Open `glancetrail.esproj`.
+3. In Lens Studio, select **Interactive Preview** to walk the room (WASD/mouse) and test pinch interactions.
+4. Run the LEAF test runner from the Lens Studio testing panel.
