@@ -5,13 +5,13 @@
  * and button bindings for the Spectacles additive display.
  */
 
-import { COLOR_PALETTE, GLANCE_TRAIL_CONTENT, type PitchBeat } from "../Content/GlanceTrailContent.ts";
-import { GlanceTrailAudio } from "../Audio/GlanceTrailAudio.ts";
-import { GlanceTrailController } from "./GlanceTrailController.ts";
-import { RehearsalMode, RehearsalState, type StateChangePayload } from "./GlanceTrailTypes.ts";
+import { COLOR_PALETTE, GLANCE_TRAIL_CONTENT, type PitchBeat } from "../Content/GlanceTrailContent";
+import { GlanceTrailAudio } from "../Audio/GlanceTrailAudio";
+import { GlanceTrailController } from "./GlanceTrailController";
+import { RehearsalMode, RehearsalState, type StateChangePayload } from "./GlanceTrailTypes";
 
-export { GLANCE_TRAIL_CONTENT, COLOR_PALETTE } from "../Content/GlanceTrailContent.ts";
-export { GlanceTrailController } from "./GlanceTrailController.ts";
+export { GLANCE_TRAIL_CONTENT, COLOR_PALETTE } from "../Content/GlanceTrailContent";
+export { GlanceTrailController } from "./GlanceTrailController";
 
 export interface UIRenderSnapshot {
   state: RehearsalState;

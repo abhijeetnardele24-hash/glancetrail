@@ -3,8 +3,9 @@
 **Date of Execution:** November 8, 2026  
 **Test Runner:** Node.js (`tests/controller-unit-tests.ts`)  
 **Scope:** Controller State Machine, Transition Guards, Yaw Normalization, Rescue Hint Timers, Reset Lifecycle  
-**Unit Test Results:** **6 / 6 PASS (100%)** (`UNIT_LOGIC_PROVEN`)  
-**LEAF Integration Suite:** Authored in `Assets/GlanceTrail/Tests/GlanceTrailLeafScenarios.ts` (`LEAF_UNEXECUTABLE_WITHOUT_LENS_STUDIO`)
+**Unit Test Results:** **7 / 7 PASS (100%)** (`UNIT_LOGIC_PROVEN`)
+**Native Preview:** Lens Studio 5.24.1 compile succeeded; full two-pass flow manually observed in SPECS 27 Interactive Preview.
+**LEAF:** Draft scenarios are preserved under `tests/leaf-deferred/`; they are not loaded into the Lens and were not executed.
 
 ---
 
@@ -12,6 +13,7 @@
 
 | # | Criterion | Test Method | Tested Assertion | Result | Evidence Classification |
 |---|---|---|---|:---:|---|
+| **0** | Native-tap/SIK duplicate input seam | `Input seam` | Two input sources firing within 120 ms invoke the action only once | **PASS** | `UNIT_LOGIC_PROVEN` |
 | **1** | Welcome starts guided rehearsal & activates Problem | `Criterion 1` | Pinching Begin rehearsal reveals 3 beacons; activates Problem (`beat 0`); hides Welcome card; displays cue ribbon | **PASS** | `UNIT_LOGIC_PROVEN` |
 | **2** | Active cue detail toggles without advancing | `Criterion 2` | Pinching active beacon/ribbon toggles detail text expansion; maintains current beat and state without advancing | **PASS** | `UNIT_LOGIC_PROVEN` |
 | **3** | Continue advances exactly one beat with rapid-pinch guard | `Criterion 3` | Pinching Continue advances Problem → Proof → Ask; rapid repeated pinches are dropped by 250ms transition lock | **PASS** | `UNIT_LOGIC_PROVEN` |
@@ -31,8 +33,9 @@
    GlanceTrail — Controller Unit Test Suite      
    Classification: UNIT_LOGIC_PROVEN             
 =================================================
-Executing 6 unit tests across all 6 done criteria...
+Executing 7 unit tests across all 6 done criteria...
 
+[PASS [✓]] Input seam: duplicate native-tap and SIK trigger invoke only once (0 ms)
 [PASS [✓]] Criterion 1: Welcome starts guided rehearsal & activates only Problem (1 ms)
 [PASS [✓]] Criterion 2: Active cue detail toggles without advancing progress (301 ms)
 [PASS [✓]] Criterion 3: Continue advances exactly one beat with rapid-pinch guard (602 ms)
@@ -41,16 +44,16 @@ Executing 6 unit tests across all 6 done criteria...
 [PASS [✓]] Criterion 6: Final completion displays & Start over clears all stale state (2407 ms)
 
 -------------------------------------------------
-Total: 6 | Passed: 6 | Failed: 0
-Execution Time: 8116 ms
+Total: 7 | Passed: 7 | Failed: 0
+Execution Time: 8122 ms
 -------------------------------------------------
 ```
 
 ---
 
-## 3. Genuine LEAF Integration Scenarios Specification
+## 3. Deferred LEAF Scenario Drafts
 
-The genuine LEAF scenarios are authored in [`Assets/GlanceTrail/Tests/GlanceTrailLeafScenarios.ts`](file:///c:/Users/Abhijeet%20Nardele/OneDrive/Desktop/devpost%20project/glancetrail/Assets/GlanceTrail/Tests/GlanceTrailLeafScenarios.ts) and registered in [`Assets/GlanceTrail/Tests/LeafIndex.ts`](file:///c:/Users/Abhijeet%20Nardele/OneDrive/Desktop/devpost%20project/glancetrail/Assets/GlanceTrail/Tests/LeafIndex.ts).
+Earlier LEAF scenario drafts are stored outside the Lens build in `tests/leaf-deferred/`. They document intended future automation but are not execution evidence.
 
 These scenarios interact directly with rendered Lens Studio SceneObjects via `Leaf.lspkg`:
 
@@ -73,10 +76,10 @@ These scenarios interact directly with rendered Lens Studio SceneObjects via `Le
    - Interacts with: `ContinueButton` through symbol rehearsal to `FINAL_COMPLETE`, then pinches `StartOverButton`.
    - Asserts: `CompletionCard` visible; reset cleanly hides all beacons, trail, ribbon, and hints with zero lingering objects.
 
-### Honest LEAF Execution Blocker Notice
-- **Status:** `LEAF_UNEXECUTABLE_WITHOUT_LENS_STUDIO`
-- **Root Cause:** Snap Lens Studio 5.23+ is not installed on this local Windows machine (`reason: lens_studio_missing`).
-- **Prerequisite:** The user must open `glancetrail.esproj` in Lens Studio 5.23+ to execute these scenarios inside the Lens Studio Interactive Preview test harness.
+### Honest LEAF Status
+- **Status:** `LEAF_DEFERRED_NOT_EXECUTED`
+- **Reason:** The installed native packages are SIK and UIKit; LEAF is not installed or wired into the packaged project.
+- **Evidence used instead:** Fresh Node unit results plus direct native Interactive Preview observation in Lens Studio 5.24.1.
 
 ---
 

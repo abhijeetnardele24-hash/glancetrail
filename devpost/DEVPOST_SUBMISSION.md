@@ -3,7 +3,7 @@
 **Project Name:** GlanceTrail  
 **Tagline:** Rehearse with your eyes up.  
 **Track:** Learn AR with SPECS (Devpost & Snap)  
-**Primary Repository URL:** `https://github.com/abhijeetnardele24-hash/glancetrail` (to be pushed after preview sign-off)  
+**Primary Repository URL:** `https://github.com/abhijeetnardele24-hash/glancetrail` (not yet published)
 **Video Demo URL:** `PLACEHOLDER_YOUTUBE_URL` (to be recorded from real Lens Studio preview)  
 
 ---
@@ -35,7 +35,7 @@ GlanceTrail is a spatial rehearsal coach for SPECS that helps speakers practice 
 - **Lens Studio Script Component:** Implemented `Assets/GlanceTrail/Scripts/GlanceTrailSceneComponent.ts` integrating SIK `Interactable` pinches, 3D text meshes, and a custom `LensStudioTimerService` using Lens Studio's `DelayedCallbackEvent`.
 - **State Controller:** Engineered a deterministic state controller (`GlanceTrailController.ts`) enforcing strict state transitions, ±180° yaw normalization, and input locking (`TRANSITION_LOCK_MS = 250`) to prevent rapid pinches from skipping beats.
 - **Additive-Safe Visuals:** Crafted with translucent milk-glass panels, porcelain typography (`#FFF7E8`), champagne halos, soft coral for Problem (`#FF7A6B`), and completion mint (`#5CD68D`). No black fills that become transparent holes on optical see-through displays.
-- **Automated Verification:** Built a comprehensive Node unit test suite (`tests/controller-unit-tests.ts`) verifying all 6 done criteria with 100% pass rate (`UNIT_LOGIC_PROVEN`), alongside a complete LEAF integration scenario suite (`Assets/GlanceTrail/Tests/GlanceTrailLeafScenarios.ts`).
+- **Verification:** Built a Node unit test suite (`tests/controller-unit-tests.ts`) covering all 6 done criteria plus the native-tap/SIK duplicate-input seam with a 7/7 pass result. The packaged Lens also compiled and completed the two-pass flow in native SPECS 27 Interactive Preview.
 
 ---
 
@@ -49,7 +49,7 @@ GlanceTrail is a spatial rehearsal coach for SPECS that helps speakers practice 
 
 ## Accomplishments We're Proud Of
 
-- **100% Passing Controller Unit Test Suite:** All 6 done criteria are covered and proven passing in automated tests.
+- **100% Passing Controller Unit Test Suite:** All 6 done criteria plus the duplicate-input regression are covered by 7 passing automated tests.
 - **The Signature Transformation:** Watching the detailed sentences vanish into quiet symbols as the user transitions from reading to speaking freely with their eyes up.
 - **Comfortable Ergonomics:** Designing the entire three-stop arc within 26° so all beacons sit comfortably within the user's field of view without exhausting head movements.
 
@@ -64,7 +64,7 @@ The most impactful AR design principle is **subtraction**. In spatial computing,
 ## Truthful Limitations & Hardware Disclosures
 
 - **Controller Logic Proven:** GlanceTrail's state machine, transition guards, yaw calculations, and reset flows are fully proven via unit tests (`UNIT_LOGIC_PROVEN`).
-- **LEAF & Preview Prerequisite:** Real Lens Studio Interactive Preview observation and automated LEAF test execution require opening `glancetrail.esproj` in Lens Studio 5.23+ on a host machine with Lens Studio installed.
+- **Native Preview Verified:** Lens Studio 5.24.1 compiled the packaged SPECS 27 project, and the complete two-pass interaction was manually observed. LEAF automation remains deferred and is not claimed as executed.
 - **Feel Unproven (`FEEL_UNPROVEN`):** Long-term physical comfort, arm fatigue over extended standing sessions, real-world outdoor lighting noise on hand tracking, and spatial acoustics in noisy auditoriums remain unmeasured without physical SPECS glasses.
 - **No Unmeasured Claims:** GlanceTrail makes zero claims of scientifically measured memory score improvements; it is an ergonomic, spatial rehearsal tool.
 
@@ -72,8 +72,7 @@ The most impactful AR design principle is **subtraction**. In spatial computing,
 
 ## Technologies Used
 
-- Snap Lens Studio 5.23+
+- Snap Lens Studio 5.24.1
 - Spectacles Interaction Kit (SIK)
 - Spectacles UI Kit (UIKit)
-- Lens Execution & Automation Framework (LEAF)
 - TypeScript / Node.js

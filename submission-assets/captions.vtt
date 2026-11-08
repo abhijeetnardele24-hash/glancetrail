@@ -37,7 +37,7 @@ If you turn away, an edge indicator gently points you back. You aren't reciting 
 Under the hood, GlanceTrail is built with the Spectacles Interaction Kit and UI Kit, using an explicit state controller.
 
 02:00.000 --> 02:10.000
-Six automated LEAF scenarios test every done criterion in preview—from one-active-cue constraints to hint timing and clean reset.
+Seven automated Node tests cover every done criterion and the duplicate-input seam; the full two-pass flow was also verified in native Interactive Preview.
 
 02:10.000 --> 02:25.000
 This belongs on glasses because it keeps your hands free, your posture natural, and your eyes connected with your audience. GlanceTrail: Rehearse the path, not the paragraph.

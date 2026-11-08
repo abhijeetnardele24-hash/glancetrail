@@ -5,12 +5,28 @@
  * ±180° yaw normalization for gaze tracking, and self-hiding rescue hint timers.
  */
 
-import { GLANCE_TRAIL_CONTENT, type PitchBeat } from "../Content/GlanceTrailContent.ts";
-import { RehearsalMode, RehearsalState, type StateChangePayload, type StateListener } from "./GlanceTrailTypes.ts";
+import { GLANCE_TRAIL_CONTENT, type PitchBeat } from "../Content/GlanceTrailContent";
+import { RehearsalMode, RehearsalState, type StateChangePayload, type StateListener } from "./GlanceTrailTypes";
 
 export interface ITimerService {
   schedule(ms: number, callback: () => void): any;
   cancel(timerHandle: any): void;
+}
+
+export class InteractionDeduplicator {
+  private readonly lastAcceptedAt = new Map<string, number>();
+  private readonly windowMs: number;
+
+  constructor(windowMs: number) {
+    this.windowMs = windowMs;
+  }
+
+  public accept(target: string, nowMs: number): boolean {
+    const previous = this.lastAcceptedAt.get(target);
+    if (previous !== undefined && nowMs - previous < this.windowMs) return false;
+    this.lastAcceptedAt.set(target, nowMs);
+    return true;
+  }
 }
 
 export class DefaultTimerService implements ITimerService {

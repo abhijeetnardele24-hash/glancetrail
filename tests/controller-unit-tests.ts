@@ -9,6 +9,7 @@
  * Assets/GlanceTrail/Tests/GlanceTrailLeafScenarios.ts.
  */
 
+import * as ControllerModule from "../Assets/GlanceTrail/Scripts/GlanceTrailController.ts";
 import { GlanceTrailController, DefaultTimerService } from "../Assets/GlanceTrail/Scripts/GlanceTrailController.ts";
 import { GlanceTrailUI } from "../Assets/GlanceTrail/Scripts/GlanceTrailUI.ts";
 import { RehearsalMode, RehearsalState } from "../Assets/GlanceTrail/Scripts/GlanceTrailTypes.ts";
@@ -33,6 +34,18 @@ interface TestResult {
 }
 
 const tests = [
+  {
+    criterionNumber: 0,
+    name: "Input seam: duplicate native-tap and SIK trigger invoke only once",
+    run: async () => {
+      const InteractionDeduplicator = (ControllerModule as any).InteractionDeduplicator;
+      const gate = new InteractionDeduplicator(120);
+      assertTest(gate.accept("Begin Rehearsal", 1000) === true, "First input source must be accepted");
+      assertTest(gate.accept("Begin Rehearsal", 1004) === false, "Second source for the same target must be dropped");
+      assertTest(gate.accept("Cue Ribbon", 1004) === true, "A different target must remain responsive");
+      assertTest(gate.accept("Begin Rehearsal", 1121) === true, "The same target must unlock after the debounce window");
+    }
+  },
   {
     criterionNumber: 1,
     name: "Criterion 1: Welcome starts guided rehearsal & activates only Problem",

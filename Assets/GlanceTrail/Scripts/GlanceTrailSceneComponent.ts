@@ -1,286 +1,246 @@
-/**
- * GlanceTrail - Lens Studio Scene Component
- * 
- * Attaches to the GlanceTrailStage SceneObject in Lens Studio.
- * Connects Spectacles Interaction Kit (SIK) Interactables,
- * 3D Text Meshes, Additive Materials, AudioComponents, and World Tracking
- * to the GlanceTrailController state machine.
- */
+/** GlanceTrail — native SPECS spatial rehearsal scene. */
+import {Interactable} from "SpectaclesInteractionKit.lspkg/Components/Interaction/Interactable/Interactable"
+import {GlanceTrailController, InteractionDeduplicator, type ITimerService} from "./GlanceTrailController"
+import {GlanceTrailUI, type UIRenderSnapshot} from "./GlanceTrailUI"
+import {GlanceTrailAudio} from "../Audio/GlanceTrailAudio"
+import {RehearsalMode, RehearsalState} from "./GlanceTrailTypes"
 
-import { GlanceTrailController, type ITimerService } from "./GlanceTrailController.ts";
-import { GlanceTrailUI, type UIRenderSnapshot } from "./GlanceTrailUI.ts";
-import { GlanceTrailAudio } from "../Audio/GlanceTrailAudio.ts";
-import { RehearsalMode, RehearsalState, type StateChangePayload } from "./GlanceTrailTypes.ts";
-import { COLOR_PALETTE, GLANCE_TRAIL_CONTENT } from "../Content/GlanceTrailContent.ts";
+type TrailNode = {object: SceneObject; text: Text; interactable?: Interactable}
 
-/**
- * Lens Studio DelayedCallbackEvent timer adapter
- */
-export class LensStudioTimerService implements ITimerService {
-  private scriptComponent: any;
-  private activeEvents: Map<any, any> = new Map();
-
-  constructor(scriptComponent?: any) {
-    this.scriptComponent = scriptComponent;
+class LensStudioTimerService implements ITimerService {
+  private activeEvents: DelayedCallbackEvent[] = []
+  constructor(private host: BaseScriptComponent) {}
+  schedule(ms: number, callback: () => void): DelayedCallbackEvent {
+    const delayed = this.host.createEvent("DelayedCallbackEvent")
+    delayed.bind(() => {
+      this.activeEvents = this.activeEvents.filter((event) => event !== delayed)
+      callback()
+    })
+    delayed.reset(ms / 1000)
+    this.activeEvents.push(delayed)
+    return delayed
   }
-
-  public schedule(ms: number, callback: () => void): any {
-    if (this.scriptComponent && typeof this.scriptComponent.createEvent === "function") {
-      try {
-        const delayedEvent = this.scriptComponent.createEvent("DelayedCallbackEvent");
-        delayedEvent.bind(() => {
-          this.activeEvents.delete(delayedEvent);
-          callback();
-        });
-        delayedEvent.reset(ms / 1000.0);
-        this.activeEvents.set(delayedEvent, delayedEvent);
-        return delayedEvent;
-      } catch (e) {
-        // Fallback to standard timer if not inside active LS context
-      }
-    }
-    if (typeof setTimeout !== "undefined") {
-      return setTimeout(callback, ms);
-    }
-    return null;
-  }
-
-  public cancel(timerHandle: any): void {
-    if (!timerHandle) return;
-    if (this.activeEvents.has(timerHandle)) {
-      try {
-        timerHandle.enabled = false;
-      } catch (e) {}
-      this.activeEvents.delete(timerHandle);
-      return;
-    }
-    if (typeof clearTimeout !== "undefined") {
-      clearTimeout(timerHandle);
-    }
+  cancel(handle: DelayedCallbackEvent): void {
+    if (!handle) return
+    handle.enabled = false
+    this.activeEvents = this.activeEvents.filter((event) => event !== handle)
   }
 }
 
-// Lens Studio component decorator stub for TypeScript compilation outside LS
-declare function component(target: any): any;
-declare function input(target: any, propertyKey: string): any;
+@component
+export class GlanceTrailSceneComponent extends BaseScriptComponent {
+  private readonly ink = new vec4(1, 0.965, 0.89, 1)
+  private readonly secondaryInk = new vec4(0.76, 0.83, 0.78, 1)
+  private readonly teal = new vec4(0.13, 0.92, 0.76, 1)
+  private readonly amber = new vec4(1, 0.70, 0.30, 1)
+  private readonly glass = new vec4(0.055, 0.115, 0.105, 0.88)
+  private readonly glassStrong = new vec4(0.075, 0.17, 0.145, 0.94)
 
-export class GlanceTrailSceneComponent {
-  // SceneObject references (wired via Lens Studio Inspector or scene descriptor)
-  public welcomeCard: any = null;
-  public beginRehearsalButton: any = null;
-  public beaconProblem: any = null;
-  public beaconProof: any = null;
-  public beaconAsk: any = null;
-  public cueRibbon: any = null;
-  public cueRibbonShortText: any = null;
-  public cueRibbonDetailText: any = null;
-  public continueButton: any = null;
-  public continueButtonText: any = null;
-  public rescueHintButton: any = null;
-  public memoryTrailLine: any = null;
-  public directionalArrow: any = null;
-  public completionCard: any = null;
-  public startOverButton: any = null;
-  public audioComponent: any = null;
-  public cameraTransform: any = null;
+  private controller!: GlanceTrailController
+  private ui!: GlanceTrailUI
+  private camera: Camera | null = null
+  private stage!: SceneObject
+  private welcome!: TrailNode
+  private beginButton!: TrailNode
+  private beatNodes: TrailNode[] = []
+  private ribbon!: TrailNode
+  private continueButton!: TrailNode
+  private rescueButton!: TrailNode
+  private trail!: TrailNode
+  private completion!: TrailNode
+  private direction!: TrailNode
+  private status!: TrailNode
+  private pulseTime = 0
+  private lastGuidanceState = false
+  private readonly inputDeduplicator = new InteractionDeduplicator(120)
 
-  // Runtime core
-  private controller: GlanceTrailController;
-  private ui: GlanceTrailUI;
-  private audio: GlanceTrailAudio;
-  private timerService: ITimerService;
-
-  constructor(scriptHost?: any) {
-    this.timerService = new LensStudioTimerService(scriptHost);
-    this.controller = new GlanceTrailController(this.timerService);
-    this.audio = new GlanceTrailAudio(this.audioComponent);
-    this.ui = new GlanceTrailUI(this.controller, this.audio);
+  onAwake(): void {
+    this.camera = this.findCamera()
+    this.controller = new GlanceTrailController(new LensStudioTimerService(this))
+    this.ui = new GlanceTrailUI(this.controller, new GlanceTrailAudio())
+    this.buildStage()
+    this.controller.addListener(() => this.render(this.ui.getSnapshot()))
+    this.render(this.ui.getSnapshot())
+    this.createEvent("UpdateEvent").bind((event: UpdateEvent) => this.updateFrame(event.getDeltaTime()))
+    print("[GlanceTrail] READY — native SPECS scene, SIK targets, two-pass rehearsal")
   }
 
-  public onAwake(): void {
-    this.bindInteractables();
-    this.bindCameraTracking();
-    this.applySnapshotToScene(this.ui.getSnapshot());
-  }
-
-  /**
-   * Bind Spectacles Interaction Kit (SIK) Interactable events
-   */
-  private bindInteractables(): void {
-    // 1. Begin Rehearsal button
-    this.bindButtonPinch(this.beginRehearsalButton, () => {
-      this.ui.onBeginRehearsalClicked();
-      this.applySnapshotToScene(this.ui.getSnapshot());
-    });
-
-    // 2. Beacon pinches (toggle detail on active beacon)
-    this.bindButtonPinch(this.beaconProblem, () => {
-      if (this.controller.getActiveBeatIndex() === 0) {
-        this.ui.onActiveCueClicked();
-        this.applySnapshotToScene(this.ui.getSnapshot());
-      }
-    });
-
-    this.bindButtonPinch(this.beaconProof, () => {
-      if (this.controller.getActiveBeatIndex() === 1) {
-        this.ui.onActiveCueClicked();
-        this.applySnapshotToScene(this.ui.getSnapshot());
-      }
-    });
-
-    this.bindButtonPinch(this.beaconAsk, () => {
-      if (this.controller.getActiveBeatIndex() === 2) {
-        this.ui.onActiveCueClicked();
-        this.applySnapshotToScene(this.ui.getSnapshot());
-      }
-    });
-
-    // 3. Cue Ribbon pinch (toggle detail)
-    this.bindButtonPinch(this.cueRibbon, () => {
-      this.ui.onActiveCueClicked();
-      this.applySnapshotToScene(this.ui.getSnapshot());
-    });
-
-    // 4. Continue button
-    this.bindButtonPinch(this.continueButton, () => {
-      this.ui.onContinueClicked();
-      this.applySnapshotToScene(this.ui.getSnapshot());
-    });
-
-    // 5. Rescue Hint button
-    this.bindButtonPinch(this.rescueHintButton, () => {
-      this.ui.onRescueHintClicked();
-      this.applySnapshotToScene(this.ui.getSnapshot());
-    });
-
-    // 6. Start Over button
-    this.bindButtonPinch(this.startOverButton, () => {
-      this.ui.onStartOverClicked();
-      this.applySnapshotToScene(this.ui.getSnapshot());
-    });
-  }
-
-  private bindButtonPinch(sceneObj: any, callback: () => void): void {
-    if (!sceneObj) return;
-    // SIK Interactable binding
-    const interactable = sceneObj.getComponent ? sceneObj.getComponent("Interactable") : sceneObj.interactable;
-    if (interactable && interactable.onTriggerStart) {
-      interactable.onTriggerStart.add(callback);
+  private buildStage(): void {
+    this.stage = global.scene.createSceneObject("GlanceTrail · Spatial Stage")
+    // Capture the wearer's initial pose, then leave the stage in world space.
+    // This works in every Preview environment while preserving a stable room
+    // anchor when the wearer subsequently turns their head.
+    if (this.camera) {
+      const cameraTransform = this.camera.getSceneObject().getTransform()
+      const cameraRotation = cameraTransform.getWorldRotation()
+      const forward = cameraRotation.multiplyVec3(new vec3(0, 0, -1))
+      this.stage.getTransform().setWorldPosition(cameraTransform.getWorldPosition().add(forward.uniformScale(110)))
+      this.stage.getTransform().setWorldRotation(cameraRotation)
+    } else {
+      this.stage.getTransform().setWorldPosition(new vec3(0, 0, -110))
     }
-  }
+    // Text layout coordinates are authored in UIKit units; this calibrated
+    // scale maps the 63-unit card to roughly a 60–70 cm apparent width at 1.1 m.
+    this.stage.getTransform().setLocalScale(new vec3(9, 9, 9))
+    this.status = this.createNode("Status · GlanceTrail", "GLANCETRAIL   •   SPATIAL REHEARSAL", new vec3(0, 28, 0), 58, 5, 2.15, this.secondaryInk, new vec4(0, 0, 0, 0))
+    this.welcome = this.createNode("Welcome Card", "EYES UP.  FIND YOUR WORDS.\n\nTurn this room into a three-stop memory path for your next pitch.", new vec3(0, 9, 0), 58, 27, 4.1, this.ink, this.glassStrong)
+    this.beginButton = this.createButton("Begin Rehearsal", "BEGIN REHEARSAL   →", new vec3(0, -10, -0.5), 28, 8, () => this.ui.onBeginRehearsalClicked())
 
-  /**
-   * Bind head yaw tracking for out-of-view directional guidance
-   */
-  private bindCameraTracking(): void {
-    // In Lens Studio, camera yaw is queried per frame or via UpdateEvent
-    this.controller.addListener(() => {
-      this.applySnapshotToScene(this.ui.getSnapshot());
-    });
-  }
-
-  /**
-   * Update head yaw from camera transform
-   */
-  public onUpdateCameraYaw(yawDeg: number): void {
-    const chimePlayed = this.controller.updateCameraYaw(yawDeg);
-    if (chimePlayed) {
-      this.audio.playExcursionChime();
+    const beatNames = ["①  PROBLEM", "②  PROOF", "③  ASK"]
+    // Keep every target inside the 26° comfort arc. The previous ±26-unit
+    // centres put the outer labels against the SPECS preview crop.
+    const x = [-20, 0, 20]
+    for (let i = 0; i < beatNames.length; i++) {
+      const index = i
+      this.beatNodes.push(this.createButton(`Beacon ${i + 1} · ${beatNames[i]}`, beatNames[i], new vec3(x[i], 11, 0), 18, 10, () => {
+        if (this.controller.getCurrentBeatIndex() === index) this.ui.onActiveCueClicked()
+      }, this.glass))
     }
-    this.applySnapshotToScene(this.ui.getSnapshot());
+
+    this.ribbon = this.createButton("Cue Ribbon · Detail on demand", "", new vec3(0, -2, -0.5), 58, 22, () => this.ui.onActiveCueClicked(), this.glassStrong, 3.35)
+    this.continueButton = this.createButton("Continue", "CONTINUE   →", new vec3(12, -19, -1), 24, 8, () => this.ui.onContinueClicked())
+    this.rescueButton = this.createButton("Need a hint", "NEED A HINT?", new vec3(-14, -19, -1), 24, 8, () => this.ui.onRescueHintClicked(), new vec4(0.16, 0.12, 0.055, 0.92))
+    this.trail = this.createNode("Connected Memory Trail", "●  ─────────  ●  ─────────  ●", new vec3(0, 19, 0.5), 58, 6, 3.5, this.teal, new vec4(0, 0, 0, 0))
+    this.completion = this.createNode("Completion Card", "PATH CONNECTED\n\nYou kept your eyes up and carried the story across the room.", new vec3(0, 3, -0.5), 58, 25, 4, this.ink, this.glassStrong)
+    this.direction = this.createNode("Directional Recovery", "", new vec3(0, 24, -2), 33, 7, 2.8, this.amber, new vec4(0.18, 0.09, 0.025, 0.94))
   }
 
-  /**
-   * Synchronize visual SceneObject hierarchy with current state snapshot
-   */
-  public applySnapshotToScene(snapshot: UIRenderSnapshot): void {
-    // 1. Welcome Card
-    this.setVisible(this.welcomeCard, snapshot.welcomeVisible);
+  private createButton(name: string, label: string, position: vec3, width: number, height: number, action: () => void, background = new vec4(0.07, 0.31, 0.255, 0.96), textSize = 2.7): TrailNode {
+    const node = this.createNode(name, label, position, width, height, textSize, this.ink, background)
+    const collider = node.object.createComponent("Physics.ColliderComponent")
+    const shape = Shape.createBoxShape()
+    shape.size = new vec3(width, height, 2.5)
+    collider.shape = shape
+    const interactable = node.object.createComponent(Interactable.getTypeName()) as Interactable
+    interactable.colliders = [collider]
+    const invoke = (source: string) => {
+      if (!this.inputDeduplicator.accept(name, getTime() * 1000)) return
+      print(`[GlanceTrail] input ${source} -> ${name}`)
+      action()
+      this.render(this.ui.getSnapshot())
+    }
+    interactable.onTriggerStart.add(() => invoke("SIK trigger"))
 
-    // 2. Three Beacons
-    this.setVisible(this.beaconProblem, snapshot.beaconsVisible);
-    this.setVisible(this.beaconProof, snapshot.beaconsVisible);
-    this.setVisible(this.beaconAsk, snapshot.beaconsVisible);
+    // Native tap fallback keeps Interactive Preview fully clickable while the
+    // SIK Interactable remains the primary hand/pinch path on SPECS.
+    const previewTap = node.object.createComponent("Component.InteractionComponent")
+    if (this.camera) previewTap.setCamera(this.camera)
+    previewTap.addMeshVisual(node.text)
+    previewTap.setMinimumTouchSize(0.08)
+    previewTap.onTap.add(() => invoke("native tap"))
+    node.interactable = interactable
+    return node
+  }
 
-    // Highlight active beacon
-    this.setBeaconActive(this.beaconProblem, snapshot.activeBeatIndex === 0);
-    this.setBeaconActive(this.beaconProof, snapshot.activeBeatIndex === 1);
-    this.setBeaconActive(this.beaconAsk, snapshot.activeBeatIndex === 2);
+  private createNode(name: string, value: string, position: vec3, width: number, height: number, size: number, color: vec4, background: vec4): TrailNode {
+    const object = global.scene.createSceneObject(name)
+    object.setParent(this.stage)
+    // Counter-scale authored offsets so calibration enlarges panels without
+    // pushing their layout centers outside the 26° comfortable arc.
+    object.getTransform().setLocalPosition(position.uniformScale(1 / 9))
+    const text = object.createComponent("Component.Text")
+    text.text = value
+    text.size = size * 2.1
+    text.weight = 560
+    text.horizontalAlignment = HorizontalAlignment.Center
+    text.verticalAlignment = VerticalAlignment.Center
+    text.horizontalOverflow = HorizontalOverflow.Wrap
+    text.verticalOverflow = VerticalOverflow.Shrink
+    text.layoutRect = Rect.create(-width / 2, width / 2, -height / 2, height / 2)
+    text.textFill.color = color
+    text.backgroundSettings.enabled = background.w > 0
+    text.backgroundSettings.fill.color = background
+    text.backgroundSettings.cornerRadius = 0.42
+    text.backgroundSettings.margins = Rect.create(1.4, 1.4, 0.9, 0.9)
+    text.outlineSettings.enabled = true
+    text.outlineSettings.fill.color = new vec4(color.x, color.y, color.z, 0.14)
+    text.outlineSettings.size = 0.12
+    text.depthTest = true
+    return {object, text}
+  }
 
-    // 3. Cue Ribbon
-    this.setVisible(this.cueRibbon, snapshot.cueRibbonVisible);
+  private render(snapshot: UIRenderSnapshot): void {
+    this.welcome.object.enabled = snapshot.welcomeVisible
+    this.beginButton.object.enabled = snapshot.welcomeVisible
+    this.status.text.text = snapshot.welcomeVisible
+      ? "GLANCETRAIL   •   SPATIAL REHEARSAL"
+      : snapshot.state === RehearsalState.FINAL_COMPLETE
+        ? "REHEARSAL COMPLETE   •   PATH CONNECTED"
+        : snapshot.state === RehearsalState.GUIDED_COMPLETE
+          ? "GUIDED PATH   •   CONNECTED"
+          : snapshot.mode === RehearsalMode.SYMBOL_ONLY
+            ? "FINAL RUN   •   SYMBOLS ONLY"
+            : "GUIDED RUN   •   DETAIL ON DEMAND"
+    for (let i = 0; i < this.beatNodes.length; i++) {
+      const node = this.beatNodes[i]
+      node.object.enabled = snapshot.beaconsVisible
+      const active = snapshot.activeBeatIndex === i
+      node.text.textFill.color = active ? this.ink : this.secondaryInk
+      node.text.backgroundSettings.fill.color = active ? this.glassStrong : this.glass
+    }
+    this.ribbon.object.enabled = snapshot.cueRibbonVisible
     if (snapshot.cueRibbonText) {
-      if (this.cueRibbonShortText) {
-        this.setText(this.cueRibbonShortText, snapshot.cueRibbonText.shortCue || snapshot.cueRibbonText.symbolMark);
-      }
-      if (this.cueRibbonDetailText) {
-        this.setVisible(this.cueRibbonDetailText, snapshot.cueRibbonText.showDetail);
-        this.setText(this.cueRibbonDetailText, snapshot.cueRibbonText.detailText);
-      }
+      const cue = snapshot.cueRibbonText
+      const modeLabel = snapshot.mode === RehearsalMode.SYMBOL_ONLY ? "MEMORY MARK" : "SPEAKING CUE"
+      const primary = cue.shortCue.length > 0 ? cue.shortCue : cue.symbolMark
+      const detail = cue.showDetail && cue.detailText.length > 0 ? `\n\n${cue.detailText}` : ""
+      this.ribbon.text.text = `${modeLabel}   •   ${cue.symbolMark}\n\n${primary}${detail}`
     }
-
-    // 4. Continue Button
-    this.setVisible(this.continueButton, snapshot.continueButtonVisible);
-    if (this.continueButtonText) {
-      this.setText(this.continueButtonText, snapshot.continueButtonLabel);
-    }
-
-    // 5. Rescue Hint Button
-    this.setVisible(this.rescueHintButton, snapshot.rescueHintVisible);
-
-    // 6. Connected Memory Trail Line
-    this.setVisible(this.memoryTrailLine, snapshot.trailConnectedVisible);
-
-    // 7. Directional Arrow
-    this.setVisible(this.directionalArrow, snapshot.directionalArrowVisible);
-    if (this.directionalArrow && snapshot.directionalArrowVisible) {
-      this.setArrowDirection(this.directionalArrow, snapshot.directionalArrowSide);
-    }
-
-    // 8. Completion Card
-    this.setVisible(this.completionCard, snapshot.completionVisible);
+    this.continueButton.object.enabled = snapshot.continueButtonVisible || snapshot.completionVisible
+    this.continueButton.text.text = snapshot.continueButtonLabel.toUpperCase() + "   →"
+    // Completion has only one action, so center it. During rehearsal the
+    // right-hand placement leaves room for the rescue target.
+    this.continueButton.object.getTransform().setLocalPosition(
+      new vec3(snapshot.completionVisible ? 0 : 12, -19, -1).uniformScale(1 / 9)
+    )
+    this.rescueButton.object.enabled = snapshot.rescueHintVisible
+    this.trail.object.enabled = snapshot.trailConnectedVisible
+    this.completion.object.enabled = snapshot.completionVisible
+    this.completion.text.text = snapshot.state === RehearsalState.FINAL_COMPLETE ? "REHEARSAL COMPLETE\n\nThe path is yours now. Take the room with you." : "PATH CONNECTED\n\nNow run it again with only the three memory marks."
+    this.direction.object.enabled = snapshot.directionalArrowVisible
+    this.direction.text.text = snapshot.directionalArrowSide === "left" ? "←  TURN LEFT" : "TURN RIGHT  →"
   }
 
-  private setVisible(obj: any, visible: boolean): void {
-    if (obj) {
-      if (typeof obj.enabled !== "undefined") {
-        obj.enabled = visible;
-      } else if (typeof obj.setVisible === "function") {
-        obj.setVisible(visible);
-      }
+  private updateFrame(deltaTime: number): void {
+    this.pulseTime += deltaTime
+    const activeIndex = this.controller.getCurrentBeatIndex()
+    for (let i = 0; i < this.beatNodes.length; i++) {
+      const pulse = i === activeIndex ? 1 + Math.sin(this.pulseTime * 3.2) * 0.045 : 1
+      this.beatNodes[i].object.getTransform().setLocalScale(new vec3(pulse, pulse, pulse))
     }
+    if (!this.camera || activeIndex < 0 || !this.beatNodes[activeIndex].object.enabled) return
+    const cameraTransform = this.camera.getSceneObject().getTransform()
+    const cameraPosition = cameraTransform.getWorldPosition()
+    const targetPosition = this.beatNodes[activeIndex].object.getTransform().getWorldPosition()
+    const forward = cameraTransform.getWorldRotation().multiplyVec3(new vec3(0, 0, -1))
+    const flatForward = new vec3(forward.x, 0, forward.z).normalize()
+    const targetDirection = targetPosition.sub(cameraPosition)
+    const flatTarget = new vec3(targetDirection.x, 0, targetDirection.z).normalize()
+    const angle = flatForward.angleTo(flatTarget) * 180 / Math.PI
+    const side = flatForward.cross(flatTarget).y > 0 ? "left" : "right"
+    const outside = angle > GlanceTrailController.FOV_HALF_ANGLE_DEG
+    const signedAngle = outside ? (side === "left" ? -angle : angle) : 0
+    const chime = this.controller.updateCameraYaw(signedAngle)
+    if (chime && !this.lastGuidanceState) print("[GlanceTrail] spatial recovery chime")
+    this.lastGuidanceState = outside
+    this.render(this.ui.getSnapshot())
   }
 
-  private setText(textComp: any, text: string): void {
-    if (textComp) {
-      if (typeof textComp.text !== "undefined") {
-        textComp.text = text;
-      }
+  private findCamera(): Camera | null {
+    for (let i = 0; i < global.scene.getRootObjectsCount(); i++) {
+      const found = this.findCameraRecursive(global.scene.getRootObject(i))
+      if (found) return found
     }
+    return null
   }
 
-  private setBeaconActive(beaconObj: any, isActive: boolean): void {
-    if (!beaconObj) return;
-    // Scale or glow modulation for active state
-    if (beaconObj.getTransform) {
-      const scale = isActive ? 1.25 : 1.0;
-      beaconObj.getTransform().setLocalScale({ x: scale, y: scale, z: scale });
+  private findCameraRecursive(object: SceneObject): Camera | null {
+    const camera = object.getComponent("Component.Camera")
+    if (camera) return camera
+    for (let i = 0; i < object.getChildrenCount(); i++) {
+      const found = this.findCameraRecursive(object.getChild(i))
+      if (found) return found
     }
-  }
-
-  private setArrowDirection(arrowObj: any, side: "left" | "right" | "none"): void {
-    if (!arrowObj || side === "none") return;
-    if (arrowObj.getTransform) {
-      const rotZ = side === "left" ? 180 : 0;
-      arrowObj.getTransform().setLocalRotation({ x: 0, y: 0, z: rotZ, w: 1 });
-    }
-  }
-
-  public getController(): GlanceTrailController {
-    return this.controller;
-  }
-
-  public getUI(): GlanceTrailUI {
-    return this.ui;
+    return null
   }
 }

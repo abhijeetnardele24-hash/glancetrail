@@ -95,7 +95,7 @@ GlanceTrailScene
 ## Verification & Automated Testing
 
 ### 1. Controller Unit Test Suite (`UNIT_LOGIC_PROVEN`)
-GlanceTrail includes 6 automated unit tests verifying every single done criterion:
+GlanceTrail includes 7 automated unit tests covering all six done criteria plus the native-tap/SIK duplicate-input seam:
 
 ```bash
 cd glancetrail
@@ -108,8 +108,9 @@ Output:
    GlanceTrail — Controller Unit Test Suite      
    Classification: UNIT_LOGIC_PROVEN             
 =================================================
-Executing 6 unit tests across all 6 done criteria...
+Executing 7 unit tests across all 6 done criteria...
 
+[PASS [✓]] Input seam: duplicate native-tap and SIK trigger invoke only once (0 ms)
 [PASS [✓]] Criterion 1: Welcome starts guided rehearsal & activates only Problem (1 ms)
 [PASS [✓]] Criterion 2: Active cue detail toggles without advancing progress (301 ms)
 [PASS [✓]] Criterion 3: Continue advances exactly one beat with rapid-pinch guard (602 ms)
@@ -118,13 +119,13 @@ Executing 6 unit tests across all 6 done criteria...
 [PASS [✓]] Criterion 6: Final completion displays & Start over clears all stale state (2407 ms)
 
 -------------------------------------------------
-Total: 6 | Passed: 6 | Failed: 0
-Execution Time: 8116 ms
+Total: 7 | Passed: 7 | Failed: 0
+Execution Time: 8122 ms
 -------------------------------------------------
 ```
 
-### 2. Genuine LEAF Integration Scenarios
-Authored in [`Assets/GlanceTrail/Tests/GlanceTrailLeafScenarios.ts`](file:///c:/Users/Abhijeet%20Nardele/OneDrive/Desktop/devpost%20project/glancetrail/Assets/GlanceTrail/Tests/GlanceTrailLeafScenarios.ts) and registered in [`Assets/GlanceTrail/Tests/LeafIndex.ts`](file:///c:/Users/Abhijeet%20Nardele/OneDrive/Desktop/devpost%20project/glancetrail/Assets/GlanceTrail/Tests/LeafIndex.ts). These scenarios use `Leaf.lspkg` contracts to interact directly with rendered Lens Studio SceneObjects.
+### 2. Native Lens Studio Verification
+The packaged SPECS 27 project compiles successfully in Lens Studio 5.24.1. The native Interactive Preview was manually exercised through Welcome, guided Problem/Proof/Ask, detail expansion, connected trail, symbol-only mode, timed rescue hint, final completion, and reset. Draft LEAF scenarios are preserved in `tests/leaf-deferred/`, but they are not part of the Lens build and have not been executed.
 
 ### 3. Non-Submission Prototype Reference
 The early 2D web prototype is preserved under [`prototype/browser-mock/`](file:///c:/Users/Abhijeet%20Nardele/OneDrive/Desktop/devpost%20project/glancetrail/prototype/browser-mock/). It is strictly reference material and not a substitute for Lens Studio Interactive Preview.
@@ -134,7 +135,7 @@ The early 2D web prototype is preserved under [`prototype/browser-mock/`](file:/
 ## Lens Studio Prerequisite
 
 To open the project and run Interactive Preview:
-1. Install **Snap Lens Studio 5.23+** on your machine.
+1. Install **Snap Lens Studio 5.24.1** on your machine.
 2. Open `glancetrail.esproj`.
 3. In Lens Studio, select **Interactive Preview** to walk the room (WASD/mouse) and test pinch interactions.
-4. Run the LEAF test runner from the Lens Studio testing panel.
+4. Run `npm test` separately for the controller and duplicate-input regression suite.

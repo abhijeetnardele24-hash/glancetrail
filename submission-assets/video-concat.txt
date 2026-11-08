@@ -1,0 +1,15 @@
+file 'lens-welcome.png'
+duration 20
+file '../prototype/browser-mock/screenshots/02_guided_problem.png'
+duration 20
+file '../prototype/browser-mock/screenshots/03_guided_proof_detail.png'
+duration 20
+file '../prototype/browser-mock/screenshots/04_connected_trail.png'
+duration 20
+file '../prototype/browser-mock/screenshots/05_symbol_mode_hint.png'
+duration 20
+file '../prototype/browser-mock/screenshots/06_final_completion.png'
+duration 25
+file 'thumbnail.png'
+duration 20
+file 'thumbnail.png'

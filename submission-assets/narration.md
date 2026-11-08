@@ -24,7 +24,7 @@ Now comes the transformation. On your second rehearsal, the sentences vanish. On
 If you turn away, an edge indicator gently points you back. You aren't reciting paragraphs—you're walking a path.
 
 [01:50 - 02:10]  
-Under the hood, GlanceTrail is built with the Spectacles Interaction Kit and UI Kit, using an explicit state controller with guarded inputs to prevent skipped beats. Six automated LEAF scenarios test every done criterion in preview—from one-active-cue constraints to hint timing and clean reset.
+Under the hood, GlanceTrail is built with the Spectacles Interaction Kit and UI Kit, using an explicit state controller with guarded inputs to prevent skipped beats. Seven automated Node tests cover every done criterion and the duplicate-input seam, and the full two-pass flow was verified in native Interactive Preview.
 
 [02:10 - 02:25]  
 This belongs on glasses because it keeps your hands free, your posture natural, and your eyes connected with your audience. GlanceTrail: Rehearse the path, not the paragraph.

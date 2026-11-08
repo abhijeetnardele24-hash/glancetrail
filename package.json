@@ -4,7 +4,7 @@
   "description": "GlanceTrail - Rehearse with your eyes up. A spatial rehearsal coach for SPECS.",
   "type": "module",
   "scripts": {
-    "test": "node --experimental-strip-types tests/controller-unit-tests.ts"
+    "test": "node --experimental-strip-types --experimental-loader ./tests/ts-loader.mjs tests/controller-unit-tests.ts"
   },
   "keywords": [
     "specs",
