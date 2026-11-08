@@ -1,36 +1,53 @@
 /**
- * GlanceTrail - State Controller
+ * GlanceTrail - Native State Controller
  * 
- * Manages deterministic rehearsal progression, idempotent guarded transitions,
- * detail expansion, symbol-only mode, self-hiding rescue hint timer,
- * directional guidance tracking, and clean state reset.
+ * Handles state progression, transition locks against rapid pinches,
+ * ±180° yaw normalization for gaze tracking, and self-hiding rescue hint timers.
  */
 
 import { GLANCE_TRAIL_CONTENT, type PitchBeat } from "../Content/GlanceTrailContent.ts";
 import { RehearsalMode, RehearsalState, type StateChangePayload, type StateListener } from "./GlanceTrailTypes.ts";
 
+export interface ITimerService {
+  schedule(ms: number, callback: () => void): any;
+  cancel(timerHandle: any): void;
+}
+
+export class DefaultTimerService implements ITimerService {
+  public schedule(ms: number, callback: () => void): any {
+    if (typeof setTimeout !== "undefined") {
+      return setTimeout(callback, ms);
+    }
+    return null;
+  }
+  public cancel(timerHandle: any): void {
+    if (timerHandle && typeof clearTimeout !== "undefined") {
+      clearTimeout(timerHandle);
+    }
+  }
+}
+
 export class GlanceTrailController {
   private currentState: RehearsalState = RehearsalState.WELCOME;
   private isDetailExpanded: boolean = false;
   private isRescueHintActive: boolean = false;
-  private rescueHintTimeoutId: any = null;
+  private rescueHintTimerHandle: any = null;
   private isOutOfView: boolean = false;
   private outOfViewDirection: "left" | "right" | "none" = "none";
   private hasPlayedExcursionChime: boolean = false;
   private isTransitionLocked: boolean = false;
-  private transitionLockTimeoutId: any = null;
+  private transitionLockTimerHandle: any = null;
+  private timerService: ITimerService;
   private listeners: StateListener[] = [];
 
-  // Configuration constants
-  public static readonly FOV_HALF_ANGLE_DEG = 16.0; // 32° FOV total / 2
-  public static readonly RESCUE_HINT_DURATION_MS = 2000; // 2 seconds
-  public static readonly TRANSITION_LOCK_MS = 250; // Guard against rapid pinches
+  public static readonly FOV_HALF_ANGLE_DEG = 16.0; // 32° horizontal FOV / 2
+  public static readonly RESCUE_HINT_DURATION_MS = 2000;
+  public static readonly TRANSITION_LOCK_MS = 250;
 
-  constructor() {
+  constructor(timerService?: ITimerService) {
+    this.timerService = timerService || new DefaultTimerService();
     this.reset();
   }
-
-  // --- State queries ---
 
   public getState(): RehearsalState {
     return this.currentState;
@@ -110,17 +127,6 @@ export class GlanceTrailController {
     return this.isTransitionLocked;
   }
 
-  public setStateForTesting(state: RehearsalState): void {
-    const prev = this.currentState;
-    this.currentState = state;
-    this.isDetailExpanded = false;
-    this.isRescueHintActive = false;
-    this.isTransitionLocked = false;
-    this.notify(prev);
-  }
-
-  // --- Listener management ---
-
   public addListener(listener: StateListener): () => void {
     this.listeners.push(listener);
     return () => {
@@ -144,9 +150,8 @@ export class GlanceTrailController {
       try {
         listener(payload);
       } catch (err) {
-        // Prevent listener errors from breaking state machine
         if (typeof print === "function") {
-          print(`[GlanceTrailController] Listener error: ${err}`);
+          print(`[GlanceTrailController] Error in listener: ${err}`);
         }
       }
     }
@@ -154,24 +159,22 @@ export class GlanceTrailController {
 
   private lockTransitions(): boolean {
     if (this.isTransitionLocked) {
-      return false; // Dropped: already transitioning
+      return false;
     }
     this.isTransitionLocked = true;
-    if (this.transitionLockTimeoutId) {
-      clearTimeout(this.transitionLockTimeoutId);
+    if (this.transitionLockTimerHandle) {
+      this.timerService.cancel(this.transitionLockTimerHandle);
     }
-    this.transitionLockTimeoutId = setTimeout(() => {
-      this.isTransitionLocked = false;
-      this.transitionLockTimeoutId = null;
-    }, GlanceTrailController.TRANSITION_LOCK_MS);
+    this.transitionLockTimerHandle = this.timerService.schedule(
+      GlanceTrailController.TRANSITION_LOCK_MS,
+      () => {
+        this.isTransitionLocked = false;
+        this.transitionLockTimerHandle = null;
+      }
+    );
     return true;
   }
 
-  // --- Core User Actions ---
-
-  /**
-   * Action 1: Pinch "Begin rehearsal" from Welcome
-   */
   public beginRehearsal(): boolean {
     if (this.currentState !== RehearsalState.WELCOME) {
       return false;
@@ -191,17 +194,13 @@ export class GlanceTrailController {
     return true;
   }
 
-  /**
-   * Action 2: Pinch active beacon or cue ribbon to expand/collapse detail
-   * (Idempotent, never advances progress)
-   */
   public toggleDetail(): boolean {
     const beatIdx = this.getCurrentBeatIndex();
     if (beatIdx === -1) {
-      return false; // Can only toggle detail when a beat is active
+      return false;
     }
     if (this.getMode() === RehearsalMode.SYMBOL_ONLY) {
-      return false; // Detail toggle disabled in symbol-only mode (use rescue hint)
+      return false; // In symbol mode, persistent detail is disabled
     }
 
     const prev = this.currentState;
@@ -210,13 +209,9 @@ export class GlanceTrailController {
     return true;
   }
 
-  /**
-   * Action 3: Pinch "Continue" to advance exactly one beat
-   * (Guarded against rapid repeated pinches)
-   */
   public advanceBeat(): boolean {
     if (!this.lockTransitions()) {
-      return false; // Guarded: drop rapid pinch
+      return false;
     }
 
     const prev = this.currentState;
@@ -256,9 +251,9 @@ export class GlanceTrailController {
       this.isDetailExpanded = false;
       this.isRescueHintActive = false;
       this.hasPlayedExcursionChime = false;
-      if (this.rescueHintTimeoutId) {
-        clearTimeout(this.rescueHintTimeoutId);
-        this.rescueHintTimeoutId = null;
+      if (this.rescueHintTimerHandle) {
+        this.timerService.cancel(this.rescueHintTimerHandle);
+        this.rescueHintTimerHandle = null;
       }
       this.notify(prev);
       return true;
@@ -266,9 +261,6 @@ export class GlanceTrailController {
     return false;
   }
 
-  /**
-   * Action 4: Pinch "Rehearse with symbols" from GUIDED_COMPLETE
-   */
   public startSymbolMode(): boolean {
     if (this.currentState !== RehearsalState.GUIDED_COMPLETE) {
       return false;
@@ -288,10 +280,6 @@ export class GlanceTrailController {
     return true;
   }
 
-  /**
-   * Action 5: Pinch "Rescue hint" in symbol-only mode
-   * Reveals short cue for 2 seconds, then self-hides without advancing.
-   */
   public triggerRescueHint(durationMs: number = GlanceTrailController.RESCUE_HINT_DURATION_MS): boolean {
     if (this.getMode() !== RehearsalMode.SYMBOL_ONLY) {
       return false;
@@ -301,32 +289,28 @@ export class GlanceTrailController {
     this.isRescueHintActive = true;
     this.notify(prev);
 
-    if (this.rescueHintTimeoutId) {
-      clearTimeout(this.rescueHintTimeoutId);
+    if (this.rescueHintTimerHandle) {
+      this.timerService.cancel(this.rescueHintTimerHandle);
     }
 
-    this.rescueHintTimeoutId = setTimeout(() => {
+    this.rescueHintTimerHandle = this.timerService.schedule(durationMs, () => {
       this.isRescueHintActive = false;
-      this.rescueHintTimeoutId = null;
+      this.rescueHintTimerHandle = null;
       this.notify(this.currentState);
-    }, durationMs);
+    });
 
     return true;
   }
 
-  /**
-   * Action 6: Reset / Start Over
-   * Returns experience to pristine Welcome state, wiping all stale objects.
-   */
   public reset(): void {
     const prev = this.currentState;
-    if (this.rescueHintTimeoutId) {
-      clearTimeout(this.rescueHintTimeoutId);
-      this.rescueHintTimeoutId = null;
+    if (this.rescueHintTimerHandle) {
+      this.timerService.cancel(this.rescueHintTimerHandle);
+      this.rescueHintTimerHandle = null;
     }
-    if (this.transitionLockTimeoutId) {
-      clearTimeout(this.transitionLockTimeoutId);
-      this.transitionLockTimeoutId = null;
+    if (this.transitionLockTimerHandle) {
+      this.timerService.cancel(this.transitionLockTimerHandle);
+      this.transitionLockTimerHandle = null;
     }
 
     this.currentState = RehearsalState.WELCOME;
@@ -339,11 +323,19 @@ export class GlanceTrailController {
     this.notify(prev);
   }
 
-  // --- Head Orientation & Spatial Direction Tracking ---
+  /**
+   * Normalizes an angular delta across the [-180, +180] degree boundary.
+   */
+  public static normalizeAngleDelta(deltaDegrees: number): number {
+    let d = deltaDegrees % 360;
+    while (d > 180) d -= 360;
+    while (d < -180) d += 360;
+    return d;
+  }
 
   /**
-   * Evaluates camera yaw angle relative to active beacon.
-   * Returns true if guidance chime should play (once per excursion).
+   * Evaluates camera yaw angle relative to active beacon, with ±180° normalization.
+   * Returns true if guidance chime should play (strictly once per excursion).
    */
   public updateCameraYaw(cameraYawDegrees: number): boolean {
     const activeBeat = this.getCurrentBeat();
@@ -356,7 +348,9 @@ export class GlanceTrailController {
       return false;
     }
 
-    const angularDiff = activeBeat.angleDegrees - cameraYawDegrees;
+    // Normalize angular difference across the [-180, +180] boundary
+    const rawDiff = activeBeat.angleDegrees - cameraYawDegrees;
+    const angularDiff = GlanceTrailController.normalizeAngleDelta(rawDiff);
     const isExcursion = Math.abs(angularDiff) > GlanceTrailController.FOV_HALF_ANGLE_DEG;
 
     let shouldPlayChime = false;
@@ -379,7 +373,7 @@ export class GlanceTrailController {
       if (this.isOutOfView) {
         this.isOutOfView = false;
         this.outOfViewDirection = "none";
-        this.hasPlayedExcursionChime = false; // Reset chime so next excursion can play
+        this.hasPlayedExcursionChime = false; // Reset for next excursion
         this.notify(this.currentState);
       }
     }

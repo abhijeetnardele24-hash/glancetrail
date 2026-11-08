@@ -1,16 +1,18 @@
 /**
- * GlanceTrail - Content Data Model
+ * GlanceTrail - Content Data Model (Lens Studio Native)
  * 
- * Provides deterministic, realistic pitch content for the 3-beat rehearsal:
- * Beat 1: Problem (front-left)
- * Beat 2: Proof (center)
- * Beat 3: Ask (front-right)
+ * Provides deterministic pitch content for the 3-beat rehearsal:
+ * Beat 1: Problem (front-left, -13° arc)
+ * Beat 2: Proof (center, 0° arc)
+ * Beat 3: Ask (front-right, +13° arc)
+ * 
+ * Note: Symbols use clean geometric marks suitable for Lens Studio text meshes (no emojis).
  */
 
 export interface PitchBeat {
   id: string;
   name: string;
-  symbol: string;
+  symbolMark: string; // Clean geometric glyph representation
   shortCue: string;
   detailText: string;
   angleDegrees: number; // Angular offset in the 26° arc (-13° to +13°)
@@ -46,7 +48,7 @@ export const GLANCE_TRAIL_CONTENT: GlanceTrailContentConfig = {
     {
       id: "beat_problem",
       name: "Problem",
-      symbol: "▼ ⌖ 👁", // Downward glance / broken eye-line icon
+      symbolMark: "[ ⌖ ]", // Target / focus point
       shortCue: "Screens pull your eyes away.",
       detailText: "Notes help you remember words, but they break connection with the room.",
       angleDegrees: -13.0,
@@ -57,7 +59,7 @@ export const GLANCE_TRAIL_CONTENT: GlanceTrailContentConfig = {
     {
       id: "beat_proof",
       name: "Proof",
-      symbol: "✦ ── ✦ ── ✦", // Three linked markers
+      symbolMark: "[ ✦ ─ ✦ ─ ✦ ]", // Three linked points
       shortCue: "Place gives memory a shape.",
       detailText: "Three ideas in three positions are easier to recall than one scrolling page.",
       angleDegrees: 0.0,
@@ -68,7 +70,7 @@ export const GLANCE_TRAIL_CONTENT: GlanceTrailContentConfig = {
     {
       id: "beat_ask",
       name: "Ask",
-      symbol: "▲ ─── ☀", // Eyes-up horizon
+      symbolMark: "[ ☼ ]", // Horizon sun
       shortCue: "Rehearse the path, not the paragraph.",
       detailText: "Try one final run with symbols only and keep your eyes up.",
       angleDegrees: 13.0,
@@ -86,7 +88,7 @@ export const COLOR_PALETTE = {
   completionMint: "#9FF0C1",
   mainTextPorcelain: "#FFF7E8",
   cobaltPrimaryAction: "#2A5CAA",
-  milkGlassBackground: "rgba(255, 247, 232, 0.12)",
+  milkGlassBackground: "rgba(255, 247, 232, 0.08)",
   beaconDimAlpha: 0.35,
   beaconActiveAlpha: 1.0
 };

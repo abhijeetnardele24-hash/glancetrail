@@ -1,14 +1,8 @@
 /**
- * GlanceTrail - Spatial UI Component
+ * GlanceTrail - Spatial UI Manager (Lens Studio Native)
  * 
- * Builds and renders the additive-safe, milk-glass visual system for SPECS:
- * - 3 Beacons (12 cm diameter in 26° arc at z = -110 cm)
- * - Active Cue Ribbon (44 cm x 18 cm) with porcelain typography
- * - Large Continue Button (14 cm x 8 cm, cobalt fill)
- * - Rescue Hint Target (8 cm circle)
- * - Connected Memory Trail
- * - Soft Edge Directional Guidance Arrow
- * - Clean Start Over and Welcome layouts
+ * Manages the visual presentation, beacon layout, cue ribbon,
+ * and button bindings for the Spectacles additive display.
  */
 
 import { COLOR_PALETTE, GLANCE_TRAIL_CONTENT, type PitchBeat } from "../Content/GlanceTrailContent.ts";
@@ -27,7 +21,7 @@ export interface UIRenderSnapshot {
   activeBeatIndex: number;
   cueRibbonVisible: boolean;
   cueRibbonText: {
-    symbol: string;
+    symbolMark: string;
     shortCue: string;
     detailText: string;
     showDetail: boolean;
@@ -62,19 +56,12 @@ export class GlanceTrailUI {
   }
 
   private onStateChange(payload: StateChangePayload): void {
-    // Play appropriate sound effect on transition
     if (payload.currentState !== payload.previousState) {
-      if (payload.currentState === RehearsalState.GUIDED_PROOF) {
+      if (payload.currentState === RehearsalState.GUIDED_PROOF || payload.currentState === RehearsalState.SYMBOL_PROOF) {
         this.audio.playBeatAdvance(1);
-      } else if (payload.currentState === RehearsalState.GUIDED_ASK) {
+      } else if (payload.currentState === RehearsalState.GUIDED_ASK || payload.currentState === RehearsalState.SYMBOL_ASK) {
         this.audio.playBeatAdvance(2);
-      } else if (payload.currentState === RehearsalState.GUIDED_COMPLETE) {
-        this.audio.playTrailConnected();
-      } else if (payload.currentState === RehearsalState.SYMBOL_PROOF) {
-        this.audio.playBeatAdvance(1);
-      } else if (payload.currentState === RehearsalState.SYMBOL_ASK) {
-        this.audio.playBeatAdvance(2);
-      } else if (payload.currentState === RehearsalState.FINAL_COMPLETE) {
+      } else if (payload.currentState === RehearsalState.GUIDED_COMPLETE || payload.currentState === RehearsalState.FINAL_COMPLETE) {
         this.audio.playTrailConnected();
       } else if (payload.currentState === RehearsalState.WELCOME) {
         this.audio.playResetChime();
@@ -98,13 +85,13 @@ export class GlanceTrailUI {
     const isOutOfView = this.controller.getOutOfView();
     const outOfViewDir = this.controller.getOutOfViewDirection();
 
-    let welcomeVisible = state === RehearsalState.WELCOME;
-    let beaconsVisible = state !== RehearsalState.WELCOME && state !== RehearsalState.FINAL_COMPLETE;
-    let cueRibbonVisible = beatIdx !== -1 && (mode === RehearsalMode.GUIDED || mode === RehearsalMode.SYMBOL_ONLY);
+    const welcomeVisible = state === RehearsalState.WELCOME;
+    const beaconsVisible = state !== RehearsalState.WELCOME && state !== RehearsalState.FINAL_COMPLETE;
+    const cueRibbonVisible = beatIdx !== -1 && (mode === RehearsalMode.GUIDED || mode === RehearsalMode.SYMBOL_ONLY);
     let continueButtonVisible = beatIdx !== -1;
-    let rescueHintVisible = mode === RehearsalMode.SYMBOL_ONLY && beatIdx !== -1;
-    let trailConnectedVisible = this.controller.isTrailConnected() && state !== RehearsalState.WELCOME;
-    let completionVisible = state === RehearsalState.GUIDED_COMPLETE || state === RehearsalState.FINAL_COMPLETE;
+    const rescueHintVisible = mode === RehearsalMode.SYMBOL_ONLY && beatIdx !== -1;
+    const trailConnectedVisible = this.controller.isTrailConnected() && state !== RehearsalState.WELCOME;
+    const completionVisible = state === RehearsalState.GUIDED_COMPLETE || state === RehearsalState.FINAL_COMPLETE;
 
     let continueLabel = GLANCE_TRAIL_CONTENT.continueButtonLabel;
     if (state === RehearsalState.GUIDED_COMPLETE) {
@@ -117,10 +104,17 @@ export class GlanceTrailUI {
 
     let cueText = null;
     if (beat && cueRibbonVisible) {
+      // In symbol-only mode, persistent text is strictly suppressed; only rescue hint temporarily displays short cue
+      const shortCueText = mode === RehearsalMode.SYMBOL_ONLY
+        ? (isHint ? beat.shortCue : "")
+        : beat.shortCue;
+
+      const detailString = mode === RehearsalMode.GUIDED && isDetail ? beat.detailText : "";
+
       cueText = {
-        symbol: beat.symbol,
-        shortCue: mode === RehearsalMode.SYMBOL_ONLY ? (isHint ? beat.shortCue : "") : beat.shortCue,
-        detailText: mode === RehearsalMode.GUIDED && isDetail ? beat.detailText : "",
+        symbolMark: beat.symbolMark,
+        shortCue: shortCueText,
+        detailText: detailString,
         showDetail: isDetail,
         showRescueHint: isHint
       };
@@ -145,8 +139,6 @@ export class GlanceTrailUI {
 
     return this.lastSnapshot;
   }
-
-  // --- Interaction Triggers (called by SIK interactor or preview click) ---
 
   public onBeginRehearsalClicked(): boolean {
     return this.controller.beginRehearsal();
@@ -174,5 +166,12 @@ export class GlanceTrailUI {
   public onStartOverClicked(): boolean {
     this.controller.reset();
     return true;
+  }
+
+  public onCameraYawChanged(yawDegrees: number): void {
+    const shouldPlayChime = this.controller.updateCameraYaw(yawDegrees);
+    if (shouldPlayChime) {
+      this.audio.playExcursionChime();
+    }
   }
 }

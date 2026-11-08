@@ -1,0 +1,445 @@
+{
+  "name": "GlanceTrailScene",
+  "version": "1.0.0",
+  "targetPlatform": "Spectacles",
+  "camera": {
+    "name": "SpectaclesCamera",
+    "trackingMode": "World",
+    "fov": {
+      "horizontalDegrees": 32.0,
+      "verticalDegrees": 37.0
+    },
+    "position": [0, 0, 0],
+    "rotation": [0, 0, 0, 1]
+  },
+  "packages": [
+    {
+      "name": "SpectaclesInteractionKit",
+      "version": "1.0.0",
+      "requiredPrefabs": [
+        "InteractionManager",
+        "HandInputSource",
+        "HeadGazePointer"
+      ]
+    }
+  ],
+  "rootSceneObjects": [
+    {
+      "name": "InteractionManager",
+      "type": "SIK_System",
+      "components": [
+        {
+          "type": "InteractionManagerComponent",
+          "properties": {
+            "enablePinch": true,
+            "enableTargetAimHover": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GlanceTrailStage",
+      "transform": {
+        "position": [0.0, -15.0, -110.0],
+        "rotation": [0.0, 0.0, 0.0, 1.0],
+        "scale": [1.0, 1.0, 1.0]
+      },
+      "comment": "Main stage positioned at 1.1m depth, 15cm below eye level, within comfortable viewing zone",
+      "components": [
+        {
+          "type": "GlanceTrailSceneComponent",
+          "script": "Assets/GlanceTrail/Scripts/GlanceTrailSceneComponent.ts"
+        }
+      ],
+      "children": [
+        {
+          "name": "WelcomeCard",
+          "transform": {
+            "position": [0.0, 0.0, 0.0],
+            "rotation": [0.0, 0.0, 0.0, 1.0],
+            "scale": [1.0, 1.0, 1.0]
+          },
+          "components": [
+            {
+              "type": "RenderMeshVisual",
+              "mesh": "RoundedQuad",
+              "size": [50.0, 30.0],
+              "material": {
+                "type": "MilkGlassAdditive",
+                "baseColor": [0.96, 0.90, 0.78, 0.35],
+                "edgeGlowColor": [1.0, 0.95, 0.85, 0.70],
+                "blendMode": "Additive"
+              }
+            }
+          ],
+          "children": [
+            {
+              "name": "TitleText",
+              "transform": { "position": [0.0, 7.0, 0.5] },
+              "components": [
+                {
+                  "type": "Text3D",
+                  "text": "GlanceTrail",
+                  "fontSize": 28,
+                  "fontFamily": "Inter",
+                  "textColor": [1.0, 0.97, 0.91, 1.0],
+                  "alignment": "Center"
+                }
+              ]
+            },
+            {
+              "name": "TaglineText",
+              "transform": { "position": [0.0, 1.0, 0.5] },
+              "components": [
+                {
+                  "type": "Text3D",
+                  "text": "Rehearse with your eyes up.",
+                  "fontSize": 15,
+                  "fontFamily": "Inter",
+                  "textColor": [0.77, 0.63, 0.35, 1.0],
+                  "alignment": "Center"
+                }
+              ]
+            },
+            {
+              "name": "BeginRehearsalButton",
+              "transform": { "position": [0.0, -8.0, 0.5] },
+              "components": [
+                {
+                  "type": "Interactable",
+                  "interactionType": "Pinch",
+                  "hoverFeedback": true
+                },
+                {
+                  "type": "RenderMeshVisual",
+                  "mesh": "RoundedQuad",
+                  "size": [24.0, 7.5],
+                  "material": {
+                    "type": "CobaltPrimary",
+                    "baseColor": [0.10, 0.45, 0.91, 0.95],
+                    "blendMode": "Additive"
+                  }
+                },
+                {
+                  "type": "Text3D",
+                  "text": "Begin rehearsal",
+                  "fontSize": 14,
+                  "fontFamily": "Inter",
+                  "textColor": [1.0, 1.0, 1.0, 1.0],
+                  "alignment": "Center"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "BeaconGroup",
+          "transform": {
+            "position": [0.0, 0.0, 0.0]
+          },
+          "children": [
+            {
+              "name": "Beacon_Problem",
+              "transform": {
+                "position": [-24.75, 0.0, 0.0],
+                "comment": "-13° angle at 1.1m (total arc 26° = 49.5cm span)"
+              },
+              "components": [
+                {
+                  "type": "Interactable",
+                  "interactionType": "Pinch",
+                  "targetDiameterCm": 12.0
+                },
+                {
+                  "type": "RenderMeshVisual",
+                  "mesh": "CylinderMesh",
+                  "size": [12.0, 12.0, 2.0],
+                  "material": {
+                    "type": "BeaconMilkGlass",
+                    "accentColor": [1.0, 0.478, 0.420, 1.0],
+                    "blendMode": "Additive"
+                  }
+                },
+                {
+                  "type": "Text3D",
+                  "name": "ProblemGlyph",
+                  "text": "[ ⌖ ]",
+                  "fontSize": 12,
+                  "textColor": [1.0, 0.97, 0.91, 1.0],
+                  "alignment": "Center"
+                }
+              ]
+            },
+            {
+              "name": "Beacon_Proof",
+              "transform": {
+                "position": [0.0, 0.0, 0.0],
+                "comment": "Center 0° angle"
+              },
+              "components": [
+                {
+                  "type": "Interactable",
+                  "interactionType": "Pinch",
+                  "targetDiameterCm": 12.0
+                },
+                {
+                  "type": "RenderMeshVisual",
+                  "mesh": "CylinderMesh",
+                  "size": [12.0, 12.0, 2.0],
+                  "material": {
+                    "type": "BeaconMilkGlass",
+                    "accentColor": [0.96, 0.90, 0.78, 1.0],
+                    "blendMode": "Additive"
+                  }
+                },
+                {
+                  "type": "Text3D",
+                  "name": "ProofGlyph",
+                  "text": "[ ✦ ─ ✦ ─ ✦ ]",
+                  "fontSize": 12,
+                  "textColor": [1.0, 0.97, 0.91, 1.0],
+                  "alignment": "Center"
+                }
+              ]
+            },
+            {
+              "name": "Beacon_Ask",
+              "transform": {
+                "position": [24.75, 0.0, 0.0],
+                "comment": "+13° angle at 1.1m"
+              },
+              "components": [
+                {
+                  "type": "Interactable",
+                  "interactionType": "Pinch",
+                  "targetDiameterCm": 12.0
+                },
+                {
+                  "type": "RenderMeshVisual",
+                  "mesh": "CylinderMesh",
+                  "size": [12.0, 12.0, 2.0],
+                  "material": {
+                    "type": "BeaconMilkGlass",
+                    "accentColor": [0.26, 0.52, 0.96, 1.0],
+                    "blendMode": "Additive"
+                  }
+                },
+                {
+                  "type": "Text3D",
+                  "name": "AskGlyph",
+                  "text": "[ ☼ ]",
+                  "fontSize": 12,
+                  "textColor": [1.0, 0.97, 0.91, 1.0],
+                  "alignment": "Center"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "CueRibbon",
+          "transform": {
+            "position": [0.0, 6.0, 0.0],
+            "size": [44.0, 18.0, 2.0]
+          },
+          "components": [
+            {
+              "type": "Interactable",
+              "interactionType": "Pinch"
+            },
+            {
+              "type": "RenderMeshVisual",
+              "mesh": "RoundedQuad",
+              "size": [44.0, 18.0],
+              "material": {
+                "type": "CueRibbonAdditive",
+                "baseColor": [0.96, 0.90, 0.78, 0.28],
+                "edgeGlowColor": [1.0, 0.95, 0.85, 0.85],
+                "blendMode": "Additive"
+              }
+            }
+          ],
+          "children": [
+            {
+              "name": "ShortCueText",
+              "transform": { "position": [0.0, 2.5, 0.5] },
+              "components": [
+                {
+                  "type": "Text3D",
+                  "text": "Screens pull your eyes away.",
+                  "fontSize": 16,
+                  "fontFamily": "Inter",
+                  "textColor": [1.0, 0.97, 0.91, 1.0],
+                  "wordWrapWidth": 40.0,
+                  "alignment": "Center"
+                }
+              ]
+            },
+            {
+              "name": "DetailText",
+              "transform": { "position": [0.0, -3.5, 0.5] },
+              "components": [
+                {
+                  "type": "Text3D",
+                  "text": "",
+                  "fontSize": 13,
+                  "fontFamily": "Inter",
+                  "textColor": [0.96, 0.90, 0.78, 0.90],
+                  "wordWrapWidth": 38.0,
+                  "alignment": "Center"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "ContinueButton",
+          "transform": {
+            "position": [0.0, -10.0, 0.0]
+          },
+          "components": [
+            {
+              "type": "Interactable",
+              "interactionType": "Pinch",
+              "targetSizeCm": [14.0, 8.0]
+            },
+            {
+              "type": "RenderMeshVisual",
+              "mesh": "RoundedQuad",
+              "size": [14.0, 8.0],
+              "material": {
+                "type": "CobaltPrimaryAction",
+                "baseColor": [0.10, 0.45, 0.91, 0.95],
+                "blendMode": "Additive"
+              }
+            },
+            {
+              "name": "ContinueButtonText",
+              "type": "Text3D",
+              "text": "Continue",
+              "fontSize": 14,
+              "textColor": [1.0, 1.0, 1.0, 1.0],
+              "alignment": "Center"
+            }
+          ]
+        },
+        {
+          "name": "RescueHintButton",
+          "transform": {
+            "position": [-18.0, -10.0, 0.0]
+          },
+          "components": [
+            {
+              "type": "Interactable",
+              "interactionType": "Pinch",
+              "targetDiameterCm": 8.0
+            },
+            {
+              "type": "RenderMeshVisual",
+              "mesh": "CylinderMesh",
+              "size": [8.0, 8.0, 1.5],
+              "material": {
+                "type": "HintMilkGlass",
+                "accentColor": [0.77, 0.63, 0.35, 0.60],
+                "blendMode": "Additive"
+              }
+            },
+            {
+              "name": "HintLabel",
+              "type": "Text3D",
+              "text": "Hint",
+              "fontSize": 11,
+              "textColor": [0.77, 0.63, 0.35, 1.0],
+              "alignment": "Center"
+            }
+          ]
+        },
+        {
+          "name": "MemoryTrailLine",
+          "transform": {
+            "position": [0.0, 0.0, -0.5]
+          },
+          "components": [
+            {
+              "type": "RenderMeshVisual",
+              "mesh": "LineStrip",
+              "points": [
+                [-24.75, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+                [24.75, 0.0, 0.0]
+              ],
+              "lineWidthCm": 0.8,
+              "material": {
+                "type": "MintTrailGlow",
+                "baseColor": [0.36, 0.84, 0.55, 0.90],
+                "blendMode": "Additive"
+              }
+            }
+          ]
+        },
+        {
+          "name": "DirectionalArrow",
+          "transform": {
+            "position": [0.0, 0.0, 0.0]
+          },
+          "components": [
+            {
+              "type": "RenderMeshVisual",
+              "mesh": "ArrowGlyph",
+              "size": [6.0, 6.0],
+              "material": {
+                "type": "DirectionalGlow",
+                "baseColor": [0.96, 0.90, 0.78, 0.95],
+                "blendMode": "Additive"
+              }
+            }
+          ]
+        },
+        {
+          "name": "CompletionCard",
+          "transform": {
+            "position": [0.0, 0.0, 0.0]
+          },
+          "components": [
+            {
+              "type": "RenderMeshVisual",
+              "mesh": "RoundedQuad",
+              "size": [52.0, 28.0],
+              "material": {
+                "type": "MilkGlassAdditive",
+                "baseColor": [0.96, 0.90, 0.78, 0.35],
+                "blendMode": "Additive"
+              }
+            },
+            {
+              "name": "CompletionMessageText",
+              "type": "Text3D",
+              "text": "Path remembered. Now say it without reading it.",
+              "fontSize": 16,
+              "fontFamily": "Inter",
+              "textColor": [0.36, 0.84, 0.55, 1.0],
+              "alignment": "Center"
+            }
+          ]
+        },
+        {
+          "name": "AudioSystem",
+          "components": [
+            {
+              "type": "AudioComponent",
+              "soundCues": [
+                { "name": "BeatAdvance_0", "frequencyHz": 440.0 },
+                { "name": "BeatAdvance_1", "frequencyHz": 554.37 },
+                { "name": "BeatAdvance_2", "frequencyHz": 659.25 },
+                { "name": "TrailConnected_Chord", "frequencyHz": 880.0 },
+                { "name": "DirectionalGuidance_Chime", "frequencyHz": 1046.5 },
+                { "name": "RescueHint_Tone", "frequencyHz": 523.25 },
+                { "name": "Reset_SoftFaint", "frequencyHz": 349.23 }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,9 +1,8 @@
 {
   "mcpServers": {
     "lens-studio": {
-      "command": "node",
-      "args": []
+      "url": "http://127.0.0.1:49152/mcp",
+      "transport": "sse"
     }
   }
 }
-
