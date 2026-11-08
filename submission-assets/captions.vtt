@@ -1,0 +1,43 @@
+WEBVTT - GlanceTrail Demo Captions
+
+00:00.000 --> 00:07.500
+When you practice a presentation, notes help you remember your words—but they pull your eyes out of the room.
+
+00:07.500 --> 00:15.000
+GlanceTrail turns the room itself into a memory path so you can rehearse with your eyes up.
+
+00:15.000 --> 00:25.000
+Built for SPECS, GlanceTrail places three pitch beats directly in front of you.
+
+00:25.000 --> 00:35.000
+About one meter away, Problem sits on the left, Proof in the center, and Ask on the right.
+
+00:35.000 --> 00:45.000
+During your first rehearsal, each beacon gives you a short cue, with deeper detail available on demand with a simple pinch.
+
+00:45.000 --> 00:55.000
+Advancing with the large Continue button folds the idea into a warm memory beacon and awakens the next beat.
+
+00:55.000 --> 01:05.000
+We advance through Proof and Ask.
+
+01:05.000 --> 01:15.000
+Once you finish Ask, the three locations connect into one visible trail, linking your ideas together in physical space.
+
+01:15.000 --> 01:25.000
+Now comes the transformation. On your second rehearsal, the sentences vanish. Only spatial symbols remain.
+
+01:25.000 --> 01:35.000
+If you hesitate, a quick pinch on the rescue hint reveals your cue for two seconds before fading away.
+
+01:35.000 --> 01:50.000
+If you turn away, an edge indicator gently points you back. You aren't reciting paragraphs—you're walking a path.
+
+01:50.000 --> 02:00.000
+Under the hood, GlanceTrail is built with the Spectacles Interaction Kit and UI Kit, using an explicit state controller.
+
+02:00.000 --> 02:10.000
+Six automated LEAF scenarios test every done criterion in preview—from one-active-cue constraints to hint timing and clean reset.
+
+02:10.000 --> 02:25.000
+This belongs on glasses because it keeps your hands free, your posture natural, and your eyes connected with your audience. GlanceTrail: Rehearse the path, not the paragraph.

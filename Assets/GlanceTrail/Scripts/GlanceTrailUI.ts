@@ -16,6 +16,9 @@ import { GlanceTrailAudio } from "../Audio/GlanceTrailAudio.ts";
 import { GlanceTrailController } from "./GlanceTrailController.ts";
 import { RehearsalMode, RehearsalState, type StateChangePayload } from "./GlanceTrailTypes.ts";
 
+export { GLANCE_TRAIL_CONTENT, COLOR_PALETTE } from "../Content/GlanceTrailContent.ts";
+export { GlanceTrailController } from "./GlanceTrailController.ts";
+
 export interface UIRenderSnapshot {
   state: RehearsalState;
   mode: RehearsalMode;

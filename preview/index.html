@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GlanceTrail — Lens Studio Interactive Preview (SPECS Stereo Mode)</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+    body {
+      background-color: #0b0d11;
+      color: #fff7e8;
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+      width: 1280px;
+      height: 720px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Lens Studio Header Bar */
+    .ls-header {
+      height: 38px;
+      background: #161922;
+      border-bottom: 1px solid #262a36;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      font-size: 12px;
+      color: #8c93a8;
+      z-index: 100;
+    }
+    .ls-title {
+      font-weight: 600;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ls-badge {
+      background: #252b3b;
+      color: #65e6e0;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: monospace;
+    }
+    .ls-mode-badge {
+      background: rgba(42, 92, 170, 0.4);
+      border: 1px solid #2a5caa;
+      color: #93c5fd;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+
+    /* Main Viewport representing Spectacles Stereo Field of View */
+    .viewport {
+      flex: 1;
+      position: relative;
+      background: radial-gradient(circle at center, #131722 0%, #08090d 100%);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Additive Display Stage */
+    .stage {
+      width: 1000px;
+      height: 580px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Grid / Floor guidance lines (subtle perspective at z = -110 cm) */
+    .floor-grid {
+      position: absolute;
+      bottom: 40px;
+      width: 800px;
+      height: 80px;
+      background: radial-gradient(ellipse at center, rgba(255, 210, 122, 0.08) 0%, transparent 70%);
+      border-bottom: 1px dashed rgba(255, 210, 122, 0.2);
+      pointer-events: none;
+    }
+
+    /* Welcome Card */
+    .welcome-card {
+      background: rgba(255, 247, 232, 0.05);
+      border: 1px solid rgba(255, 210, 122, 0.35);
+      box-shadow: 0 0 30px rgba(255, 210, 122, 0.15), inset 0 0 20px rgba(255, 247, 232, 0.03);
+      backdrop-filter: blur(12px);
+      border-radius: 20px;
+      padding: 40px 60px;
+      text-align: center;
+      max-width: 540px;
+      transition: all 0.3s ease;
+    }
+    .welcome-title {
+      font-size: 38px;
+      font-weight: 700;
+      color: #fff7e8;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+      text-shadow: 0 0 16px rgba(255, 247, 232, 0.4);
+    }
+    .welcome-tagline {
+      font-size: 18px;
+      color: #ffd27a;
+      margin-bottom: 16px;
+      font-weight: 500;
+    }
+    .welcome-desc {
+      font-size: 14px;
+      color: #cbd5e1;
+      line-height: 1.5;
+      margin-bottom: 28px;
+    }
+
+    /* Beacons Arc Container */
+    .beacons-container {
+      position: absolute;
+      top: 90px;
+      width: 760px;
+      height: 140px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Individual Beacon */
+    .beacon {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: rgba(255, 247, 232, 0.06);
+      border: 2px solid rgba(255, 210, 122, 0.25);
+      box-shadow: 0 0 15px rgba(255, 210, 122, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+    .beacon.active {
+      transform: scale(1.18);
+      border-color: #ffd27a;
+      box-shadow: 0 0 28px rgba(255, 210, 122, 0.45), inset 0 0 15px rgba(255, 210, 122, 0.2);
+      background: rgba(255, 210, 122, 0.14);
+    }
+    .beacon.active.problem {
+      border-color: #ff7a6b;
+      box-shadow: 0 0 28px rgba(255, 122, 107, 0.5), inset 0 0 15px rgba(255, 122, 107, 0.2);
+    }
+    .beacon.active.proof {
+      border-color: #65e6e0;
+      box-shadow: 0 0 28px rgba(101, 230, 224, 0.5), inset 0 0 15px rgba(101, 230, 224, 0.2);
+    }
+    .beacon.completed {
+      border-color: #9ff0c1;
+      background: rgba(159, 240, 193, 0.12);
+      box-shadow: 0 0 18px rgba(159, 240, 193, 0.3);
+    }
+    .beacon-symbol {
+      font-size: 20px;
+      color: #fff7e8;
+      margin-bottom: 2px;
+    }
+    .beacon-name {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #cbd5e1;
+    }
+
+    /* Connected Memory Trail Line */
+    .trail-line {
+      position: absolute;
+      top: 135px;
+      width: 600px;
+      height: 3px;
+      background: linear-gradient(90deg, #ff7a6b 0%, #65e6e0 50%, #ffd27a 100%);
+      box-shadow: 0 0 14px rgba(159, 240, 193, 0.8);
+      border-radius: 2px;
+      z-index: 1;
+      display: none;
+      animation: drawLine 0.6s ease-out forwards;
+    }
+    @keyframes drawLine {
+      from { width: 0; opacity: 0; }
+      to { width: 600px; opacity: 1; }
+    }
+
+    /* Active Cue Ribbon */
+    .cue-ribbon {
+      position: absolute;
+      top: 230px;
+      width: 580px;
+      background: rgba(255, 247, 232, 0.07);
+      border: 1.5px solid rgba(255, 210, 122, 0.4);
+      box-shadow: 0 0 25px rgba(255, 210, 122, 0.18), inset 0 0 15px rgba(255, 247, 232, 0.04);
+      border-radius: 16px;
+      padding: 24px 32px;
+      text-align: center;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    }
+    .cue-ribbon:hover {
+      border-color: #ffd27a;
+      box-shadow: 0 0 32px rgba(255, 210, 122, 0.3);
+    }
+    .cue-symbol-large {
+      font-size: 28px;
+      color: #ffd27a;
+      margin-bottom: 6px;
+    }
+    .cue-short-text {
+      font-size: 22px;
+      font-weight: 600;
+      color: #fff7e8;
+      line-height: 1.35;
+      text-shadow: 0 0 12px rgba(255, 247, 232, 0.3);
+    }
+    .cue-detail-text {
+      font-size: 15px;
+      color: #cbd5e1;
+      line-height: 1.5;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 247, 232, 0.12);
+      display: none;
+    }
+    .cue-toggle-hint {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 8px;
+      font-style: italic;
+    }
+
+    /* Buttons */
+    .btn-action {
+      background: #2a5caa;
+      color: #fff7e8;
+      font-size: 16px;
+      font-weight: 600;
+      padding: 14px 36px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 0 18px rgba(42, 92, 170, 0.5);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-block;
+    }
+    .btn-action:hover {
+      background: #3b76cc;
+      box-shadow: 0 0 25px rgba(42, 92, 170, 0.8);
+      transform: translateY(-2px);
+    }
+    .btn-action:active {
+      transform: scale(0.96);
+    }
+
+    .continue-btn-wrap {
+      position: absolute;
+      top: 450px;
+      text-align: center;
+    }
+
+    .btn-rescue-hint {
+      position: absolute;
+      top: 454px;
+      left: calc(50% - 190px);
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: rgba(255, 247, 232, 0.08);
+      border: 1px solid rgba(255, 210, 122, 0.3);
+      color: #ffd27a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 12px rgba(255, 210, 122, 0.15);
+    }
+    .btn-rescue-hint:hover {
+      background: rgba(255, 210, 122, 0.18);
+      border-color: #ffd27a;
+      box-shadow: 0 0 18px rgba(255, 210, 122, 0.4);
+    }
+
+    /* Directional Guidance Arrow */
+    .edge-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 36px;
+      color: #ffd27a;
+      text-shadow: 0 0 16px rgba(255, 210, 122, 0.8);
+      display: none;
+      animation: pulse 1s infinite alternate;
+      z-index: 50;
+    }
+    .edge-arrow.left { left: 24px; }
+    .edge-arrow.right { right: 24px; }
+    @keyframes pulse {
+      from { opacity: 0.6; transform: translateY(-50%) scale(0.92); }
+      to { opacity: 1; transform: translateY(-50%) scale(1.08); }
+    }
+
+    /* Completion Overlay */
+    .completion-card {
+      background: rgba(255, 247, 232, 0.06);
+      border: 1.5px solid #9ff0c1;
+      box-shadow: 0 0 35px rgba(159, 240, 193, 0.35);
+      border-radius: 20px;
+      padding: 40px 60px;
+      text-align: center;
+      max-width: 560px;
+      display: none;
+    }
+    .completion-icon {
+      font-size: 42px;
+      color: #9ff0c1;
+      margin-bottom: 12px;
+    }
+    .completion-text {
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff7e8;
+      margin-bottom: 24px;
+      line-height: 1.35;
+      text-shadow: 0 0 14px rgba(159, 240, 193, 0.4);
+    }
+
+    /* Interactive Simulation Controls Footer */
+    .ls-footer {
+      height: 48px;
+      background: #161922;
+      border-top: 1px solid #262a36;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      font-size: 12px;
+      z-index: 100;
+    }
+    .state-pills {
+      display: flex;
+      gap: 6px;
+    }
+    .state-pill {
+      background: #252b3b;
+      padding: 4px 10px;
+      border-radius: 4px;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    .state-pill.active {
+      background: #2a5caa;
+      color: #ffffff;
+      font-weight: 600;
+    }
+    .shortcut-hints {
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Lens Studio Header Bar -->
+  <div class="ls-header">
+    <div class="ls-title">
+      <span>Lens Studio Interactive Preview</span>
+      <span class="ls-badge">v5.23.2</span>
+      <span class="ls-mode-badge">Spectacles (Stereo 32° FOV)</span>
+    </div>
+    <div>
+      <span>Project: <strong>GlanceTrail.esproj</strong></span>
+    </div>
+  </div>
+
+  <!-- Simulated Additive Display Stage -->
+  <div class="viewport">
+
+    <!-- Out of View Directional Guidance Arrows -->
+    <div id="arrow-left" class="edge-arrow left">◀</div>
+    <div id="arrow-right" class="edge-arrow right">▶</div>
+
+    <div class="stage">
+      <div class="floor-grid"></div>
+
+      <!-- Welcome State -->
+      <div id="welcome-view" class="welcome-card">
+        <div class="welcome-title">GlanceTrail</div>
+        <div class="welcome-tagline">Rehearse with your eyes up.</div>
+        <div class="welcome-desc">
+          Turns your room into a three-stop memory path so you can practice your pitch without reading from a screen.
+        </div>
+        <button id="btn-begin" class="btn-action">Begin rehearsal</button>
+      </div>
+
+      <!-- Memory Trail Connecting Line -->
+      <div id="trail-line" class="trail-line"></div>
+
+      <!-- 3 Beacons -->
+      <div id="beacons-view" class="beacons-container" style="display: none;">
+        <div id="beacon-0" class="beacon active problem">
+          <div class="beacon-symbol">▼ ⌖ 👁</div>
+          <div class="beacon-name">Problem</div>
+        </div>
+        <div id="beacon-1" class="beacon">
+          <div class="beacon-symbol">✦ ── ✦</div>
+          <div class="beacon-name">Proof</div>
+        </div>
+        <div id="beacon-2" class="beacon">
+          <div class="beacon-symbol">▲ ── ☀</div>
+          <div class="beacon-name">Ask</div>
+        </div>
+      </div>
+
+      <!-- Active Cue Ribbon -->
+      <div id="cue-ribbon" class="cue-ribbon" style="display: none;">
+        <div id="cue-symbol" class="cue-symbol-large">▼ ⌖ 👁</div>
+        <div id="cue-short" class="cue-short-text">Screens pull your eyes away.</div>
+        <div id="cue-detail" class="cue-detail-text">Notes help you remember words, but they break connection with the room.</div>
+        <div id="cue-toggle-hint" class="cue-toggle-hint">Click / pinch to toggle detail</div>
+      </div>
+
+      <!-- Continue & Rescue Hint Controls -->
+      <div id="controls-wrap" class="continue-btn-wrap" style="display: none;">
+        <button id="btn-rescue" class="btn-rescue-hint" title="Rescue hint" style="display: none;">💡</button>
+        <button id="btn-continue" class="btn-action">Continue</button>
+      </div>
+
+      <!-- Completion Card -->
+      <div id="completion-view" class="completion-card">
+        <div class="completion-icon">✦ ─── ✦ ─── ✦</div>
+        <div class="completion-text">Path remembered.<br>Now say it without reading it.</div>
+        <button id="btn-start-over" class="btn-action">Start over</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Simulation Footer -->
+  <div class="ls-footer">
+    <div class="state-pills">
+      <span class="state-pill" onclick="setSimState('welcome')">1. Welcome</span>
+      <span class="state-pill" onclick="setSimState('problem')">2. Problem (Guided)</span>
+      <span class="state-pill" onclick="setSimState('proof_detail')">3. Proof + Detail</span>
+      <span class="state-pill" onclick="setSimState('connected_trail')">4. Trail Connected</span>
+      <span class="state-pill" onclick="setSimState('symbol_hint')">5. Symbol Mode + Hint</span>
+      <span class="state-pill" onclick="setSimState('final_complete')">6. Final Complete</span>
+    </div>
+    <div class="shortcut-hints">
+      <span>Pinch/Click: Advance | Arrow Keys: Simulate Head Turn</span>
+    </div>
+  </div>
+
+  <script type="module">
+    import { GlanceTrailController } from "./bundle.js";
+    import { GlanceTrailUI } from "./bundle.js";
+    import { GLANCE_TRAIL_CONTENT } from "./bundle.js";
+
+    const controller = new GlanceTrailController();
+    const ui = new GlanceTrailUI(controller);
+
+    // DOM Elements
+    const welcomeView = document.getElementById("welcome-view");
+    const beaconsView = document.getElementById("beacons-view");
+    const cueRibbon = document.getElementById("cue-ribbon");
+    const cueSymbol = document.getElementById("cue-symbol");
+    const cueShort = document.getElementById("cue-short");
+    const cueDetail = document.getElementById("cue-detail");
+    const cueToggleHint = document.getElementById("cue-toggle-hint");
+    const trailLine = document.getElementById("trail-line");
+    const controlsWrap = document.getElementById("controls-wrap");
+    const btnContinue = document.getElementById("btn-continue");
+    const btnRescue = document.getElementById("btn-rescue");
+    const btnBegin = document.getElementById("btn-begin");
+    const completionView = document.getElementById("completion-view");
+    const btnStartOver = document.getElementById("btn-start-over");
+    const arrowLeft = document.getElementById("arrow-left");
+    const arrowRight = document.getElementById("arrow-right");
+
+    const beacons = [
+      document.getElementById("beacon-0"),
+      document.getElementById("beacon-1"),
+      document.getElementById("beacon-2")
+    ];
+
+    function render() {
+      const snap = ui.getSnapshot();
+
+      welcomeView.style.display = snap.welcomeVisible ? "block" : "none";
+      beaconsView.style.display = snap.beaconsVisible ? "flex" : "none";
+      cueRibbon.style.display = snap.cueRibbonVisible ? "block" : "none";
+      controlsWrap.style.display = snap.continueButtonVisible ? "block" : "none";
+      btnContinue.textContent = snap.continueButtonLabel;
+      btnRescue.style.display = snap.rescueHintVisible ? "flex" : "none";
+      trailLine.style.display = snap.trailConnectedVisible ? "block" : "none";
+      completionView.style.display = snap.completionVisible && snap.state === "FINAL_COMPLETE" ? "block" : "none";
+
+      // Beacons styling
+      beacons.forEach((b, idx) => {
+        b.className = "beacon";
+        if (idx < snap.activeBeatIndex || snap.state === "GUIDED_COMPLETE" || snap.state === "FINAL_COMPLETE") {
+          b.classList.add("completed");
+        } else if (idx === snap.activeBeatIndex) {
+          b.classList.add("active");
+          if (idx === 0) b.classList.add("problem");
+          if (idx === 1) b.classList.add("proof");
+        }
+      });
+
+      // Cue ribbon content
+      if (snap.cueRibbonText) {
+        cueSymbol.textContent = snap.cueRibbonText.symbol;
+        cueShort.textContent = snap.cueRibbonText.shortCue || "";
+        cueDetail.textContent = snap.cueRibbonText.detailText || "";
+        cueDetail.style.display = snap.cueRibbonText.showDetail ? "block" : "none";
+        cueToggleHint.style.display = snap.mode === "SYMBOL_ONLY" ? "none" : "block";
+
+        if (snap.mode === "SYMBOL_ONLY") {
+          if (snap.cueRibbonText.showRescueHint) {
+            cueShort.textContent = GLANCE_TRAIL_CONTENT.beats[snap.activeBeatIndex].shortCue;
+            cueRibbon.style.borderColor = "#ffd27a";
+            cueRibbon.style.boxShadow = "0 0 35px rgba(255, 210, 122, 0.45)";
+          } else {
+            cueShort.textContent = "";
+            cueRibbon.style.borderColor = "rgba(255, 210, 122, 0.3)";
+            cueRibbon.style.boxShadow = "0 0 20px rgba(255, 210, 122, 0.15)";
+          }
+        }
+      }
+
+      // Directional arrow
+      arrowLeft.style.display = snap.directionalArrowVisible && snap.directionalArrowSide === "left" ? "block" : "none";
+      arrowRight.style.display = snap.directionalArrowVisible && snap.directionalArrowSide === "right" ? "block" : "none";
+    }
+
+    // Attach event listeners
+    btnBegin.addEventListener("click", () => {
+      ui.onBeginRehearsalClicked();
+      render();
+    });
+
+    cueRibbon.addEventListener("click", () => {
+      ui.onActiveCueClicked();
+      render();
+    });
+
+    btnContinue.addEventListener("click", () => {
+      ui.onContinueClicked();
+      render();
+    });
+
+    btnRescue.addEventListener("click", () => {
+      ui.onRescueHintClicked();
+      render();
+    });
+
+    btnStartOver.addEventListener("click", () => {
+      ui.onStartOverClicked();
+      render();
+    });
+
+    window.setSimState = function(stateKey) {
+      if (stateKey === "welcome") {
+        controller.reset();
+      } else if (stateKey === "problem") {
+        controller.setStateForTesting("GUIDED_PROBLEM");
+      } else if (stateKey === "proof_detail") {
+        controller.setStateForTesting("GUIDED_PROOF");
+        ui.onActiveCueClicked();
+      } else if (stateKey === "connected_trail") {
+        controller.setStateForTesting("GUIDED_COMPLETE");
+      } else if (stateKey === "symbol_hint") {
+        controller.setStateForTesting("SYMBOL_PROBLEM");
+        ui.onRescueHintClicked();
+        controller.updateCameraYaw(30);
+      } else if (stateKey === "final_complete") {
+        controller.setStateForTesting("FINAL_COMPLETE");
+      }
+      render();
+    };
+
+    // Keyboard arrow keys for head turn simulation
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight") {
+        controller.updateCameraYaw(30);
+        render();
+      } else if (e.key === "ArrowLeft") {
+        controller.updateCameraYaw(-30);
+        render();
+      } else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+        controller.updateCameraYaw(0);
+        render();
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>

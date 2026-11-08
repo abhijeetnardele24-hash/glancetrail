@@ -15,3 +15,4 @@ node_modules/
 # Agent symlink caches
 .claude/
 agent/
+scripts/concat-list.txt

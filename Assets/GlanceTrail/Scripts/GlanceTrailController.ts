@@ -110,6 +110,15 @@ export class GlanceTrailController {
     return this.isTransitionLocked;
   }
 
+  public setStateForTesting(state: RehearsalState): void {
+    const prev = this.currentState;
+    this.currentState = state;
+    this.isDetailExpanded = false;
+    this.isRescueHintActive = false;
+    this.isTransitionLocked = false;
+    this.notify(prev);
+  }
+
   // --- Listener management ---
 
   public addListener(listener: StateListener): () => void {
