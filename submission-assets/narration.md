@@ -28,3 +28,4 @@ Under the hood, GlanceTrail is built with the Spectacles Interaction Kit and UI 
 
 [02:10 - 02:25]  
 This belongs on glasses because it keeps your hands free, your posture natural, and your eyes connected with your audience. GlanceTrail: Rehearse the path, not the paragraph.
+
