@@ -11,3 +11,7 @@ Public/
 Thumbs.db
 node_modules/
 .virtual-scene.json
+
+# Agent symlink caches
+.claude/
+agent/
