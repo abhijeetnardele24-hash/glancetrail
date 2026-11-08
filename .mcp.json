@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "lens-studio": {
+      "command": "node",
+      "args": []
+    }
+  }
+}

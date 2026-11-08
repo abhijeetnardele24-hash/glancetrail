@@ -1,0 +1,13 @@
+# Lens Studio
+Cache/
+Temp/
+Logs/
+Export/
+Public/
+.vscode/
+.idea/
+*.log
+.DS_Store
+Thumbs.db
+node_modules/
+.virtual-scene.json
